@@ -50,6 +50,26 @@
 
 <!-- 添加样式 -->
 <style>
+/* 增加笔记内容的字体大小 */
+.content {
+    font-size: 22px;  /* 显著增大浏览模式的字体 */
+    line-height: 1.8;
+    margin-bottom: 80px;
+    padding: 20px;
+}
+
+/* 标题样式 */
+h1 {
+    font-size: 28px;
+    margin-bottom: 20px;
+}
+
+/* 元数据样式 */
+.metadata {
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
 .floating-actions {
     position: fixed;
     right: 20px;
@@ -68,6 +88,14 @@
 
 /* 适配移动端 */
 @media (max-width: 768px) {
+    .content {
+        font-size: 20px;
+    }
+    
+    h1 {
+        font-size: 24px;
+    }
+    
     .floating-actions {
         left: 0;
         right: 0;
@@ -79,15 +107,9 @@
     }
     
     .floating-actions .btn {
-        margin: 0;
-        flex: 1;
         margin: 0 5px;
+        flex: 1;
     }
-}
-
-/* 确保内容不会被悬浮按钮遮挡 */
-.content {
-    margin-bottom: 80px;
 }
 </style>
 {% endblock %} 

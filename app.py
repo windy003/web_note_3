@@ -31,7 +31,7 @@ class Note(db.Model):
     title = db.Column(db.String(200), nullable=True)
     content = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(pytz.timezone('Asia/Shanghai')))
-    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(pytz.timezone('Asia/Shanghai')), onupdate=datetime.now)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(pytz.timezone('Asia/Shanghai')), onupdate=lambda: datetime.now(pytz.timezone('Asia/Shanghai')))
 
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
@@ -113,8 +113,10 @@ def index():
 def view_note(note_id):
     note = Note.query.get_or_404(note_id)
     if note.user_id != current_user.id:
-        abort(403)
-    return render_template('view_note.html', note=note)
+        flash('您没有权限查看这个笔记')
+        return redirect(url_for('index'))
+    # 直接重定向到编辑页面
+    return redirect(url_for('edit_note', note_id=note_id))
 
 @app.route('/note/<int:note_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -126,7 +128,7 @@ def edit_note(note_id):
     if request.method == 'POST':
         note.title = request.form['title']
         note.content = request.form['content']
-        note.updated_at = datetime.now(pytz.UTC)
+        note.updated_at = datetime.now(pytz.timezone('Asia/Shanghai'))
         db.session.commit()
         flash('笔记已更新')
         return redirect(url_for('view_note', note_id=note.id))
@@ -159,7 +161,7 @@ def create():
             title=title,
             content=content,  # content 可以为空
             user_id=current_user.id,
-            created_at=datetime.now(pytz.UTC)
+            created_at=datetime.now(pytz.timezone('Asia/Shanghai'))
         )
         db.session.add(note)
         db.session.commit()

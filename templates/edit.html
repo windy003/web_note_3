@@ -37,7 +37,7 @@
     top: 0 !important;
     left: 0 !important;
     width: 100% !important;
-    height: calc(100% - 60px) !important; /* 留出底部空间给按钮 */
+    height: calc(100% - 60px) !important;
     z-index: 9999 !important;
     margin: 0 !important;
     padding: 20px !important;
@@ -45,6 +45,19 @@
     border-radius: 0 !important;
     background: #fff !important;
     resize: none !important;
+    font-size: 24px !important;
+    line-height: 1.8 !important;
+}
+
+#content {
+    font-size: 22px;
+    line-height: 1.8;
+    padding: 20px;
+}
+
+#title {
+    font-size: 20px;
+    padding: 12px 15px;
 }
 
 .floating-buttons {
@@ -73,22 +86,13 @@
     display: none;
 }
 
-/* 移动端适配 */
 @media (max-width: 768px) {
-    .floating-buttons {
-        left: 0;
-        right: 0;
-        bottom: 0;
-        border-radius: 8px 8px 0 0;
-        display: flex;
-        justify-content: space-around;
-        padding: 15px;
+    #content {
+        font-size: 20px;
     }
     
-    .floating-buttons button,
-    .floating-buttons a {
-        margin: 0 5px;
-        flex: 1;
+    .fullscreen-textarea {
+        font-size: 20px !important;
     }
 }
 </style>
