@@ -20,7 +20,7 @@
                     笔记列表
                 </a>
                 <ul class="dropdown-menu" aria-labelledby="notesDropdown">
-                    {% for note in current_user.notes %}
+                    {% for note in current_user.notes|sort(attribute='updated_at', reverse=true) %}
                     <li><a class="dropdown-item" href="{{ url_for('view_note', note_id=note.id) }}">{{ note.title }}</a></li>
                     {% endfor %}
                     {% if not current_user.notes %}
