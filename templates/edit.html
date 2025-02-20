@@ -1,42 +1,158 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <form method="POST" class="card p-4 form-container">
-            <h2 class="mb-4 fs-3">编辑笔记</h2>
-            <div class="mb-3">
-                <label for="title" class="form-label fs-5">标题：</label>
-                <input type="text" class="form-control form-control-lg fs-5" id="title" name="title" value="{{ note.title }}">
-            </div>
-            <div class="mb-3 content-wrapper">
-                <label for="content" class="form-label fs-5">内容：</label>
-                <button type="button" class="btn btn-outline-secondary fullscreen-btn" onclick="toggleFullscreen(this)">
-                    <i class="bi bi-fullscreen"></i> 全屏
-                </button>
-                <textarea class="form-control form-control-lg fs-5" id="content" name="content" rows="6">{{ note.content }}</textarea>
-            </div>
-            <button type="submit" class="btn btn-primary btn-lg fs-5">更新</button>
-        </form>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h1 class="mb-4">编辑笔记</h1>
+            <form method="POST" id="editForm">
+                <div class="mb-3">
+                    <label for="title" class="form-label">标题</label>
+                    <input type="text" class="form-control" id="title" name="title" value="{{ note.title }}" required>
+                </div>
+                <div class="mb-3 position-relative">
+                    <label for="content" class="form-label">
+                        内容
+                        <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="toggleFullscreen()">
+                            <i class="bi bi-fullscreen"></i> 全屏
+                        </button>
+                    </label>
+                    <textarea class="form-control" id="content" name="content" rows="10">{{ note.content }}</textarea>
+                </div>
+                <div class="mb-3 action-buttons">
+                    <button type="submit" class="btn btn-primary">保存</button>
+                    <a href="{{ url_for('view_note', note_id=note.id) }}" class="btn btn-secondary">取消</a>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
-<script>
-function toggleFullscreen(button) {
-    const contentWrapper = button.closest('.content-wrapper');
-    const textarea = contentWrapper.querySelector('textarea');
-    const isFullscreen = contentWrapper.classList.contains('fullscreen-mode');
+<!-- 添加 Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+
+<style>
+.fullscreen-textarea {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: calc(100% - 60px) !important; /* 留出底部空间给按钮 */
+    z-index: 9999 !important;
+    margin: 0 !important;
+    padding: 20px !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    resize: none !important;
+}
+
+.floating-buttons {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 10000;
+    display: none;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(5px);
+}
+
+.floating-buttons button,
+.floating-buttons a {
+    margin-left: 10px;
+}
+
+.exit-fullscreen {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 10000;
+    display: none;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .floating-buttons {
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 8px 8px 0 0;
+        display: flex;
+        justify-content: space-around;
+        padding: 15px;
+    }
     
-    if (isFullscreen) {
-        contentWrapper.classList.remove('fullscreen-mode');
-        button.innerHTML = '<i class="bi bi-fullscreen"></i> 全屏';
-        document.body.style.overflow = 'auto';
-    } else {
-        contentWrapper.classList.add('fullscreen-mode');
-        button.innerHTML = '<i class="bi bi-fullscreen-exit"></i> 退出全屏';
-        document.body.style.overflow = 'hidden';
-        textarea.focus();
+    .floating-buttons button,
+    .floating-buttons a {
+        margin: 0 5px;
+        flex: 1;
     }
 }
+</style>
+
+<!-- 悬浮按钮组 -->
+<div class="floating-buttons">
+    <button type="button" class="btn btn-primary" onclick="document.getElementById('editForm').submit()">保存</button>
+    <a href="{{ url_for('view_note', note_id=note.id) }}" class="btn btn-secondary">取消</a>
+</div>
+
+<button type="button" class="btn btn-outline-secondary exit-fullscreen" onclick="exitFullscreen()">
+    <i class="bi bi-fullscreen-exit"></i> 退出全屏
+</button>
+
+<script>
+function toggleFullscreen() {
+    const textarea = document.getElementById('content');
+    const exitButton = document.querySelector('.exit-fullscreen');
+    const floatingButtons = document.querySelector('.floating-buttons');
+    const normalButtons = document.querySelector('.action-buttons');
+    
+    textarea.classList.add('fullscreen-textarea');
+    exitButton.style.display = 'block';
+    floatingButtons.style.display = 'block';
+    normalButtons.style.display = 'none';
+    textarea.focus();
+    
+    document.body.style.overflow = 'hidden';
+}
+
+function exitFullscreen() {
+    const textarea = document.getElementById('content');
+    const exitButton = document.querySelector('.exit-fullscreen');
+    const floatingButtons = document.querySelector('.floating-buttons');
+    const normalButtons = document.querySelector('.action-buttons');
+    
+    textarea.classList.remove('fullscreen-textarea');
+    exitButton.style.display = 'none';
+    floatingButtons.style.display = 'none';
+    normalButtons.style.display = 'block';
+    
+    document.body.style.overflow = 'auto';
+}
+
+document.querySelector('.exit-fullscreen').addEventListener('click', function(e) {
+    e.preventDefault();
+    exitFullscreen();
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        exitFullscreen();
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const textarea = document.getElementById('content');
+    const exitButton = document.querySelector('.exit-fullscreen');
+    const floatingButtons = document.querySelector('.floating-buttons');
+    
+    if (!textarea.classList.contains('fullscreen-textarea')) {
+        exitButton.style.display = 'none';
+        floatingButtons.style.display = 'none';
+    }
+});
 </script>
 {% endblock %} 

@@ -15,5 +15,7 @@ RUN useradd -u 1000 -m myuser && \
     chown -R myuser:myuser /app/instance && \
     chmod 777 /app/instance
 
+RUN apt-get update && apt-get install -y sqlite3
+
 USER myuser
 

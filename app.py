@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, abort
 from datetime import datetime
 import sqlite3
 import os
@@ -9,6 +9,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Length, EqualTo, ValidationError
 import pytz
+from markupsafe import Markup
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-goes-here'  # 使用安全的随机字符串
@@ -17,6 +18,13 @@ db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+
+# 添加 nl2br 过滤器
+@app.template_filter('nl2br')
+def nl2br_filter(s):
+    if not s:
+        return ""
+    return Markup(s.replace('\n', '<br>'))
 
 class Note(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -78,7 +86,7 @@ def login():
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('index'))
+    return redirect(url_for('login'))
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -95,54 +103,69 @@ def register():
     return render_template('register.html', form=form)
 
 @app.route('/')
+@login_required
 def index():
-    if current_user.is_authenticated:
-        notes = Note.query.filter_by(user_id=current_user.id).order_by(Note.updated_at.desc()).all()
-    else:
-        notes = []
+    notes = Note.query.filter_by(user_id=current_user.id).order_by(Note.updated_at.desc()).all()
     return render_template('index.html', notes=notes)
+
+@app.route('/note/<int:note_id>')
+@login_required
+def view_note(note_id):
+    note = Note.query.get_or_404(note_id)
+    if note.user_id != current_user.id:
+        abort(403)
+    return render_template('view_note.html', note=note)
+
+@app.route('/note/<int:note_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_note(note_id):
+    note = Note.query.get_or_404(note_id)
+    if note.user_id != current_user.id:
+        flash('您没有权限编辑这个笔记')
+        return redirect(url_for('index'))
+    if request.method == 'POST':
+        note.title = request.form['title']
+        note.content = request.form['content']
+        note.updated_at = datetime.now(pytz.UTC)
+        db.session.commit()
+        flash('笔记已更新')
+        return redirect(url_for('view_note', note_id=note.id))
+    return render_template('edit.html', note=note)
+
+@app.route('/note/<int:note_id>/delete', methods=['POST'])
+@login_required
+def delete_note(note_id):
+    note = Note.query.get_or_404(note_id)
+    if note.user_id != current_user.id:
+        flash('您没有权限删除这个笔记')
+        return redirect(url_for('index'))
+    db.session.delete(note)
+    db.session.commit()
+    flash('笔记已删除')
+    return redirect(url_for('index'))
 
 @app.route('/create', methods=['GET', 'POST'])
 @login_required
 def create():
     if request.method == 'POST':
+        title = request.form['title']
+        content = request.form.get('content', '')  # 使用 get 方法，如果没有内容则默认为空字符串
+        
+        if not title:  # 只检查标题是否为空
+            flash('标题不能为空')
+            return redirect(url_for('create'))
+            
         note = Note(
-            title=request.form['title'],
-            content=request.form['content'],
-            user_id=current_user.id
+            title=title,
+            content=content,  # content 可以为空
+            user_id=current_user.id,
+            created_at=datetime.now(pytz.UTC)
         )
         db.session.add(note)
         db.session.commit()
+        flash('笔记已创建')
         return redirect(url_for('index'))
     return render_template('create.html')
-
-@app.route('/edit/<int:id>', methods=['GET', 'POST'])
-@login_required
-def edit(id):
-    note = Note.query.get_or_404(id)
-    if note.user_id != current_user.id:
-        flash('您没有权限编辑这个笔记')
-        return redirect(url_for('index'))
-    
-    if request.method == 'POST':
-        note.title = request.form['title']
-        note.content = request.form['content']
-        note.updated_at = datetime.now(pytz.timezone('Asia/Shanghai'))
-        db.session.commit()
-        return redirect(url_for('index'))
-    return render_template('edit.html', note=note)
-
-@app.route('/delete/<int:id>')
-@login_required
-def delete(id):
-    note = Note.query.get_or_404(id)
-    if note.user_id != current_user.id:
-        flash('您没有权限删除这个笔记')
-        return redirect(url_for('index'))
-        
-    db.session.delete(note)
-    db.session.commit()
-    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     with app.app_context():
