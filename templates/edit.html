@@ -16,8 +16,36 @@
                         <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="toggleFullscreen()">
                             <i class="bi bi-fullscreen"></i> 全屏
                         </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="increaseFontSize()">
+                            <i class="bi bi-zoom-in"></i> 放大字体
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="decreaseFontSize()">
+                            <i class="bi bi-zoom-out"></i> 缩小字体
+                        </button>
                     </label>
                     <textarea class="form-control" id="content" name="content" rows="10">{{ note.content }}</textarea>
+                    
+                    <!-- 全屏模式下的控制按钮 -->
+                    <div id="fullscreen-controls" class="d-none">
+                        <div id="drag-handle" class="drag-handle">
+                            <i class="bi bi-grip-vertical"></i>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-light control-btn" onclick="toggleFullscreen()">
+                            <i class="bi bi-fullscreen-exit"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-light control-btn" onclick="increaseFontSize()">
+                            <i class="bi bi-zoom-in"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-light control-btn" onclick="decreaseFontSize()">
+                            <i class="bi bi-zoom-out"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-success control-btn" onclick="saveNote()">
+                            <i class="bi bi-check-lg"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-secondary control-btn" onclick="cancelEdit()">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="mb-3 action-buttons">
                     <button type="submit" class="btn btn-primary">保存</button>
@@ -45,7 +73,6 @@
     border-radius: 0 !important;
     background: #fff !important;
     resize: none !important;
-    font-size: 24px !important;
     line-height: 1.8 !important;
 }
 
@@ -92,7 +119,77 @@
     }
     
     .fullscreen-textarea {
-        font-size: 20px !important;
+        font-size: 18px;
+    }
+    
+    #fullscreen-controls button {
+        width: 50px;
+        height: 50px;
+    }
+    
+    #fullscreen-controls button i {
+        font-size: 1.5rem;
+    }
+}
+
+#fullscreen-controls {
+    position: fixed;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    z-index: 10000;
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 8px 4px;
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    cursor: move;
+}
+
+#fullscreen-controls button {
+    margin: 3px 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+}
+
+#fullscreen-controls .btn-success {
+    background-color: #28a745;
+    color: white;
+}
+
+#fullscreen-controls .btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.drag-handle {
+    text-align: center;
+    cursor: move;
+    padding: 2px 0;
+    color: #666;
+    font-size: 0.8rem;
+}
+
+@media (max-width: 768px) {
+    #fullscreen-controls {
+        padding: 10px 6px;
+        border-radius: 25px;
+    }
+    
+    #fullscreen-controls button {
+        width: 40px;
+        height: 40px;
+        margin: 5px 0;
+    }
+    
+    #fullscreen-controls button i {
+        font-size: 1.2rem;
     }
 }
 </style>
@@ -110,17 +207,22 @@
 <script>
 function toggleFullscreen() {
     const textarea = document.getElementById('content');
-    const exitButton = document.querySelector('.exit-fullscreen');
-    const floatingButtons = document.querySelector('.floating-buttons');
-    const normalButtons = document.querySelector('.action-buttons');
+    const controls = document.getElementById('fullscreen-controls');
     
-    textarea.classList.add('fullscreen-textarea');
-    exitButton.style.display = 'block';
-    floatingButtons.style.display = 'block';
-    normalButtons.style.display = 'none';
-    textarea.focus();
+    textarea.classList.toggle('fullscreen-textarea');
     
-    document.body.style.overflow = 'hidden';
+    if (textarea.classList.contains('fullscreen-textarea')) {
+        document.body.style.overflow = 'hidden';
+        controls.classList.remove('d-none');
+        
+        const currentSize = getCurrentFontSize();
+        if (!textarea.style.fontSize) {
+            setFontSize(Math.max(24, currentSize));
+        }
+    } else {
+        document.body.style.overflow = '';
+        controls.classList.add('d-none');
+    }
 }
 
 function exitFullscreen() {
@@ -158,5 +260,184 @@ document.addEventListener('DOMContentLoaded', function() {
         floatingButtons.style.display = 'none';
     }
 });
+
+function getCurrentFontSize() {
+    const textarea = document.getElementById('content');
+    
+    if (textarea.style.fontSize) {
+        return parseFloat(textarea.style.fontSize);
+    }
+    
+    const style = window.getComputedStyle(textarea);
+    return parseFloat(style.fontSize);
+}
+
+function setFontSize(size) {
+    const textarea = document.getElementById('content');
+    
+    textarea.style.setProperty('font-size', size + 'px', 'important');
+    
+    localStorage.setItem('noteFontSize', size);
+}
+
+function increaseFontSize() {
+    const currentSize = getCurrentFontSize();
+    console.log('当前字体大小:', currentSize);
+    const newSize = currentSize + 2;
+    console.log('新字体大小:', newSize);
+    setFontSize(newSize);
+}
+
+function decreaseFontSize() {
+    const currentSize = getCurrentFontSize();
+    console.log('当前字体大小:', currentSize);
+    const newSize = Math.max(12, currentSize - 2);
+    console.log('新字体大小:', newSize);
+    setFontSize(newSize);
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+    const savedSize = localStorage.getItem('noteFontSize');
+    if (savedSize) {
+        setFontSize(parseFloat(savedSize));
+    }
+    
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+        const textarea = document.getElementById('content');
+        if (!textarea.style.fontSize) {
+            setFontSize(24);
+        }
+    }
+    
+    // 初始化拖动功能
+    initDraggable();
+});
+
+// 初始化拖动功能
+function initDraggable() {
+    const controls = document.getElementById('fullscreen-controls');
+    const dragHandle = document.getElementById('drag-handle');
+    
+    let isDragging = false;
+    let offsetX, offsetY;
+    let initialClick = false; // 标记是否刚点击
+    
+    // 鼠标/触摸开始事件
+    function startDrag(e) {
+        // 如果点击的是按钮，不启动拖动
+        if (e.target.closest('.control-btn')) {
+            return;
+        }
+        
+        // 阻止默认行为
+        e.preventDefault();
+        
+        // 获取事件坐标（支持鼠标和触摸）
+        const clientX = e.clientX || e.touches[0].clientX;
+        const clientY = e.clientY || e.touches[0].clientY;
+        
+        // 计算偏移量
+        const rect = controls.getBoundingClientRect();
+        offsetX = clientX - rect.left;
+        offsetY = clientY - rect.top;
+        
+        isDragging = true;
+        initialClick = true; // 标记初始点击
+        
+        // 添加移动和结束事件监听器
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('touchmove', drag, { passive: false });
+        document.addEventListener('mouseup', endDrag);
+        document.addEventListener('touchend', endDrag);
+    }
+    
+    // 鼠标/触摸移动事件
+    function drag(e) {
+        if (!isDragging) return;
+        
+        // 阻止默认行为
+        e.preventDefault();
+        
+        // 如果是初始点击，需要有一定的移动距离才开始拖动
+        if (initialClick) {
+            initialClick = false;
+        }
+        
+        // 获取事件坐标（支持鼠标和触摸）
+        const clientX = e.clientX || e.touches[0].clientX;
+        const clientY = e.clientY || e.touches[0].clientY;
+        
+        // 计算新位置
+        const newLeft = clientX - offsetX;
+        const newTop = clientY - offsetY;
+        
+        // 设置新位置
+        controls.style.left = newLeft + 'px';
+        controls.style.top = newTop + 'px';
+        controls.style.right = 'auto';
+        controls.style.transform = 'none';
+    }
+    
+    // 鼠标/触摸结束事件
+    function endDrag(e) {
+        if (!isDragging) return;
+        
+        isDragging = false;
+        
+        // 移除事件监听器
+        document.removeEventListener('mousemove', drag);
+        document.removeEventListener('touchmove', drag);
+        document.removeEventListener('mouseup', endDrag);
+        document.removeEventListener('touchend', endDrag);
+    }
+    
+    // 只为拖动手柄添加拖动开始事件监听器
+    dragHandle.addEventListener('mousedown', startDrag);
+    dragHandle.addEventListener('touchstart', startDrag, { passive: false });
+    
+    // 为面板添加拖动事件，但排除按钮
+    controls.addEventListener('mousedown', function(e) {
+        // 如果点击的不是按钮，且不是拖动手柄，则启动拖动
+        if (!e.target.closest('.control-btn') && !e.target.closest('#drag-handle')) {
+            startDrag(e);
+        }
+    });
+    
+    controls.addEventListener('touchstart', function(e) {
+        // 如果点击的不是按钮，且不是拖动手柄，则启动拖动
+        if (!e.target.closest('.control-btn') && !e.target.closest('#drag-handle')) {
+            startDrag(e);
+        }
+    }, { passive: false });
+    
+    // 为按钮添加阻止冒泡的事件
+    const buttons = controls.querySelectorAll('.control-btn');
+    buttons.forEach(function(button) {
+        button.addEventListener('mousedown', function(e) {
+            e.stopPropagation();
+        });
+        button.addEventListener('touchstart', function(e) {
+            e.stopPropagation();
+        }, { passive: true });
+    });
+}
+
+// 保存笔记
+function saveNote() {
+    document.getElementById('editForm').submit();
+}
+
+// 取消编辑
+function cancelEdit() {
+    // 如果在全屏模式，先退出全屏
+    if (document.getElementById('content').classList.contains('fullscreen-textarea')) {
+        toggleFullscreen();
+    }
+    
+    // 获取取消按钮的链接并跳转
+    const cancelLink = document.querySelector('.action-buttons a.btn-secondary').getAttribute('href');
+    window.location.href = cancelLink;
+}
 </script>
 {% endblock %} 

@@ -14,15 +14,7 @@ services:
       - ./instance:/app/instance:rw
       - /etc/letsencrypt/live/windy.run/fullchain.pem:/etc/ssl/certs/fullchain.pem:ro
       - /etc/letsencrypt/live/windy.run/privkey.pem:/etc/ssl/certs/privkey.pem:ro
-      # - type: bind
-      #   source: ./static
-      #   target: /app/static
-      # - type: bind
-      #   source: ./templates
-      #   target: /app/templates
-      # - type: bind
-      #   source: ./app.py
-      #   target: /app/app.py
+    user: "1000:1000"  # 使用宿主机的UID:GID
     command: ["gunicorn", 
               "--workers", "4",
               "--timeout", "120",
