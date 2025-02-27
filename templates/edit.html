@@ -398,15 +398,15 @@ function initDraggable() {
     
     // 为面板添加拖动事件，但排除按钮
     controls.addEventListener('mousedown', function(e) {
-        // 如果点击的不是按钮，且不是拖动手柄，则启动拖动
-        if (!e.target.closest('.control-btn') && !e.target.closest('#drag-handle')) {
+        // 只允许通过拖动手柄启动拖动
+        if (e.target.closest('#drag-handle')) {
             startDrag(e);
         }
     });
     
     controls.addEventListener('touchstart', function(e) {
-        // 如果点击的不是按钮，且不是拖动手柄，则启动拖动
-        if (!e.target.closest('.control-btn') && !e.target.closest('#drag-handle')) {
+        // 只允许通过拖动手柄启动拖动
+        if (e.target.closest('#drag-handle')) {
             startDrag(e);
         }
     }, { passive: false });
