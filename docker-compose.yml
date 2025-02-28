@@ -3,7 +3,7 @@ version: '3.8'
 services:
   web:
     build: .
-    image: windy007008/note-web-3:latest
+    image: windy007008/3-note-web:latest
     ports:
       - "5000:5000"  
     volumes:

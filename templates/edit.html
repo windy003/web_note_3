@@ -10,19 +10,30 @@
                     <label for="title" class="form-label">标题</label>
                     <input type="text" class="form-control" id="title" name="title" value="{{ note.title }}" required>
                 </div>
+                
                 <div class="mb-3 position-relative">
-                    <label for="content" class="form-label">
-                        内容
-                        <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="toggleFullscreen()">
-                            <i class="bi bi-fullscreen"></i> 全屏
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="increaseFontSize()">
-                            <i class="bi bi-zoom-in"></i> 放大字体
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="decreaseFontSize()">
-                            <i class="bi bi-zoom-out"></i> 缩小字体
-                        </button>
-                    </label>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label for="content" class="form-label mb-0">
+                            内容
+                        </label>
+                        <div class="action-buttons-top">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleFullscreen()" title="全屏">
+                                <i class="bi bi-fullscreen"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="increaseFontSize()" title="放大字体">
+                                <i class="bi bi-zoom-in"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="decreaseFontSize()" title="缩小字体">
+                                <i class="bi bi-zoom-out"></i>
+                            </button>
+                            <button type="submit" class="btn btn-sm btn-primary" title="保存">
+                                <i class="bi bi-check-lg"></i>
+                            </button>
+                            <a href="{{ url_for('view_note', note_id=note.id) }}" class="btn btn-sm btn-secondary" title="取消">
+                                <i class="bi bi-x-lg"></i>
+                            </a>
+                        </div>
+                    </div>
                     <textarea class="form-control" id="content" name="content" rows="10">{{ note.content }}</textarea>
                     
                     <!-- 全屏模式下的控制按钮 -->
@@ -47,7 +58,9 @@
                         </button>
                     </div>
                 </div>
-                <div class="mb-3 action-buttons">
+                
+                <!-- 隐藏原来底部的按钮 -->
+                <div class="mb-3 action-buttons d-none">
                     <button type="submit" class="btn btn-primary">保存</button>
                     <a href="{{ url_for('view_note', note_id=note.id) }}" class="btn btn-secondary">取消</a>
                 </div>
@@ -426,6 +439,24 @@ function initDraggable() {
 // 保存笔记
 function saveNote() {
     document.getElementById('editForm').submit();
+
+    // 显示保存提示
+    const saveNotification = document.createElement('div');
+    saveNotification.textContent = '正在保存...';
+    saveNotification.style.position = 'fixed';
+    saveNotification.style.bottom = '20px';
+    saveNotification.style.right = '20px';
+    saveNotification.style.padding = '10px 20px';
+    saveNotification.style.backgroundColor = 'rgba(40, 167, 69, 0.9)';
+    saveNotification.style.color = 'white';
+    saveNotification.style.borderRadius = '4px';
+    saveNotification.style.zIndex = '10000';
+    document.body.appendChild(saveNotification);
+
+    // 2秒后移除提示
+    setTimeout(() => {
+        document.body.removeChild(saveNotification);
+    }, 2000);
 }
 
 // 取消编辑
@@ -439,5 +470,46 @@ function cancelEdit() {
     const cancelLink = document.querySelector('.action-buttons a.btn-secondary').getAttribute('href');
     window.location.href = cancelLink;
 }
+
+// 添加键盘快捷键监听器 - 放在现有脚本的末尾
+document.addEventListener('DOMContentLoaded', function() {
+    // 添加键盘快捷键监听器
+    document.addEventListener('keydown', function(e) {
+        console.log('键盘事件触发:', e.key, 'Ctrl:', e.ctrlKey, 'Shift:', e.shiftKey); // 调试信息
+        
+        // 检测 Ctrl+Shift+S 组合键
+        if (e.ctrlKey && e.shiftKey && (e.key === 'S' || e.key === 's')) {
+            // 阻止默认行为
+            e.preventDefault();
+            
+            console.log('检测到 Ctrl+Shift+S 快捷键，正在保存...');
+            
+            // 提交表单保存笔记
+            document.getElementById('editForm').submit();
+            
+            // 显示保存提示
+            const saveNotification = document.createElement('div');
+            saveNotification.textContent = '正在保存...';
+            saveNotification.style.position = 'fixed';
+            saveNotification.style.bottom = '20px';
+            saveNotification.style.right = '20px';
+            saveNotification.style.padding = '10px 20px';
+            saveNotification.style.backgroundColor = 'rgba(40, 167, 69, 0.9)';
+            saveNotification.style.color = 'white';
+            saveNotification.style.borderRadius = '4px';
+            saveNotification.style.zIndex = '10000';
+            document.body.appendChild(saveNotification);
+            
+            // 2秒后移除提示
+            setTimeout(() => {
+                if (document.body.contains(saveNotification)) {
+                    document.body.removeChild(saveNotification);
+                }
+            }, 2000);
+            
+            return false;
+        }
+    });
+});
 </script>
 {% endblock %} 

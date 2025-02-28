@@ -123,14 +123,14 @@ def view_note(note_id):
 def edit_note(note_id):
     note = Note.query.get_or_404(note_id)
     if note.user_id != current_user.id:
-        flash('您没有权限编辑这个笔记')
+        flash('您没有权限编辑这个笔记', 'danger')
         return redirect(url_for('index'))
     if request.method == 'POST':
         note.title = request.form['title']
         note.content = request.form['content']
         note.updated_at = datetime.now(pytz.timezone('Asia/Shanghai'))
         db.session.commit()
-        flash('笔记已更新')
+        flash('笔记已更新', 'success')  # 使用 'success' 类别使消息显示为绿色
         return redirect(url_for('view_note', note_id=note.id))
     return render_template('edit.html', note=note)
 
