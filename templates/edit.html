@@ -207,15 +207,6 @@
 }
 </style>
 
-<!-- 悬浮按钮组 -->
-<div class="floating-buttons">
-    <button type="button" class="btn btn-primary" onclick="document.getElementById('editForm').submit()">保存</button>
-    <a href="{{ url_for('view_note', note_id=note.id) }}" class="btn btn-secondary">取消</a>
-</div>
-
-<button type="button" class="btn btn-outline-secondary exit-fullscreen" onclick="exitFullscreen()">
-    <i class="bi bi-fullscreen-exit"></i> 退出全屏
-</button>
 
 <script>
 function toggleFullscreen() {
@@ -487,25 +478,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // 提交表单保存笔记
             document.getElementById('editForm').submit();
             
-            // 显示保存提示
-            const saveNotification = document.createElement('div');
-            saveNotification.textContent = '正在保存...';
-            saveNotification.style.position = 'fixed';
-            saveNotification.style.bottom = '20px';
-            saveNotification.style.right = '20px';
-            saveNotification.style.padding = '10px 20px';
-            saveNotification.style.backgroundColor = 'rgba(40, 167, 69, 0.9)';
-            saveNotification.style.color = 'white';
-            saveNotification.style.borderRadius = '4px';
-            saveNotification.style.zIndex = '10000';
-            document.body.appendChild(saveNotification);
             
-            // 2秒后移除提示
-            setTimeout(() => {
-                if (document.body.contains(saveNotification)) {
-                    document.body.removeChild(saveNotification);
-                }
-            }, 2000);
             
             return false;
         }
