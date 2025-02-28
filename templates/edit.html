@@ -59,11 +59,7 @@
                     </div>
                 </div>
                 
-                <!-- 隐藏原来底部的按钮 -->
-                <div class="mb-3 action-buttons d-none">
-                    <button type="submit" class="btn btn-primary">保存</button>
-                    <a href="{{ url_for('view_note', note_id=note.id) }}" class="btn btn-secondary">取消</a>
-                </div>
+                
             </form>
         </div>
     </div>
@@ -100,23 +96,7 @@
     padding: 12px 15px;
 }
 
-.floating-buttons {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 10000;
-    display: none;
-    background: rgba(255, 255, 255, 0.9);
-    padding: 10px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    backdrop-filter: blur(5px);
-}
 
-.floating-buttons button,
-.floating-buttons a {
-    margin-left: 10px;
-}
 
 .exit-fullscreen {
     position: fixed;
@@ -157,7 +137,8 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     display: flex;
     flex-direction: column;
-    cursor: move;
+    user-select: none; /* 防止文本选择 */
+    touch-action: none; /* 防止触摸操作 */
 }
 
 #fullscreen-controls button {
@@ -183,10 +164,16 @@
 
 .drag-handle {
     text-align: center;
-    cursor: move;
-    padding: 2px 0;
+    cursor: grab;
+    padding: 4px 0;
     color: #666;
     font-size: 0.8rem;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 4px;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
 }
 
 @media (max-width: 768px) {
@@ -219,10 +206,19 @@ function toggleFullscreen() {
         document.body.style.overflow = 'hidden';
         controls.classList.remove('d-none');
         
+        // 重置控制面板位置
+        controls.style.left = '';
+        controls.style.top = '';
+        controls.style.right = '10px';
+        controls.style.transform = 'translateY(-50%)';
+        
         const currentSize = getCurrentFontSize();
         if (!textarea.style.fontSize) {
             setFontSize(Math.max(24, currentSize));
         }
+        
+        // 重新初始化拖动功能
+        setTimeout(initDraggable, 100);
     } else {
         document.body.style.overflow = '';
         controls.classList.add('d-none');
@@ -231,14 +227,8 @@ function toggleFullscreen() {
 
 function exitFullscreen() {
     const textarea = document.getElementById('content');
-    const exitButton = document.querySelector('.exit-fullscreen');
-    const floatingButtons = document.querySelector('.floating-buttons');
-    const normalButtons = document.querySelector('.action-buttons');
     
     textarea.classList.remove('fullscreen-textarea');
-    exitButton.style.display = 'none';
-    floatingButtons.style.display = 'none';
-    normalButtons.style.display = 'block';
     
     document.body.style.overflow = 'auto';
 }
@@ -256,8 +246,6 @@ document.addEventListener('keydown', function(e) {
 
 document.addEventListener('DOMContentLoaded', function() {
     const textarea = document.getElementById('content');
-    const exitButton = document.querySelector('.exit-fullscreen');
-    const floatingButtons = document.querySelector('.floating-buttons');
     
     if (!textarea.classList.contains('fullscreen-textarea')) {
         exitButton.style.display = 'none';
@@ -315,7 +303,7 @@ window.addEventListener('DOMContentLoaded', function() {
     }
     
     // 初始化拖动功能
-    initDraggable();
+    setTimeout(initDraggable, 500); // 延迟初始化，确保DOM元素已加载
 });
 
 // 初始化拖动功能
@@ -323,12 +311,18 @@ function initDraggable() {
     const controls = document.getElementById('fullscreen-controls');
     const dragHandle = document.getElementById('drag-handle');
     
+    if (!controls || !dragHandle) {
+        console.error('找不到拖动元素');
+        return;
+    }
+    
     let isDragging = false;
     let offsetX, offsetY;
-    let initialClick = false; // 标记是否刚点击
     
     // 鼠标/触摸开始事件
     function startDrag(e) {
+        console.log('开始拖动');
+        
         // 如果点击的是按钮，不启动拖动
         if (e.target.closest('.control-btn')) {
             return;
@@ -338,8 +332,8 @@ function initDraggable() {
         e.preventDefault();
         
         // 获取事件坐标（支持鼠标和触摸）
-        const clientX = e.clientX || e.touches[0].clientX;
-        const clientY = e.clientY || e.touches[0].clientY;
+        const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+        const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
         
         // 计算偏移量
         const rect = controls.getBoundingClientRect();
@@ -347,13 +341,16 @@ function initDraggable() {
         offsetY = clientY - rect.top;
         
         isDragging = true;
-        initialClick = true; // 标记初始点击
         
         // 添加移动和结束事件监听器
         document.addEventListener('mousemove', drag);
         document.addEventListener('touchmove', drag, { passive: false });
         document.addEventListener('mouseup', endDrag);
         document.addEventListener('touchend', endDrag);
+        
+        // 添加样式表明正在拖动
+        controls.style.cursor = 'grabbing';
+        controls.style.opacity = '0.8';
     }
     
     // 鼠标/触摸移动事件
@@ -363,29 +360,29 @@ function initDraggable() {
         // 阻止默认行为
         e.preventDefault();
         
-        // 如果是初始点击，需要有一定的移动距离才开始拖动
-        if (initialClick) {
-            initialClick = false;
-        }
-        
         // 获取事件坐标（支持鼠标和触摸）
-        const clientX = e.clientX || e.touches[0].clientX;
-        const clientY = e.clientY || e.touches[0].clientY;
+        const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+        const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
         
         // 计算新位置
         const newLeft = clientX - offsetX;
         const newTop = clientY - offsetY;
         
+        console.log('拖动到新位置:', newLeft, newTop);
+        
         // 设置新位置
         controls.style.left = newLeft + 'px';
         controls.style.top = newTop + 'px';
         controls.style.right = 'auto';
+        controls.style.bottom = 'auto';
         controls.style.transform = 'none';
     }
     
     // 鼠标/触摸结束事件
     function endDrag(e) {
         if (!isDragging) return;
+        
+        console.log('结束拖动');
         
         isDragging = false;
         
@@ -394,37 +391,17 @@ function initDraggable() {
         document.removeEventListener('touchmove', drag);
         document.removeEventListener('mouseup', endDrag);
         document.removeEventListener('touchend', endDrag);
+        
+        // 恢复样式
+        controls.style.cursor = '';
+        controls.style.opacity = '1';
     }
     
-    // 只为拖动手柄添加拖动开始事件监听器
+    // 为拖动手柄添加拖动开始事件监听器
     dragHandle.addEventListener('mousedown', startDrag);
     dragHandle.addEventListener('touchstart', startDrag, { passive: false });
     
-    // 为面板添加拖动事件，但排除按钮
-    controls.addEventListener('mousedown', function(e) {
-        // 只允许通过拖动手柄启动拖动
-        if (e.target.closest('#drag-handle')) {
-            startDrag(e);
-        }
-    });
-    
-    controls.addEventListener('touchstart', function(e) {
-        // 只允许通过拖动手柄启动拖动
-        if (e.target.closest('#drag-handle')) {
-            startDrag(e);
-        }
-    }, { passive: false });
-    
-    // 为按钮添加阻止冒泡的事件
-    const buttons = controls.querySelectorAll('.control-btn');
-    buttons.forEach(function(button) {
-        button.addEventListener('mousedown', function(e) {
-            e.stopPropagation();
-        });
-        button.addEventListener('touchstart', function(e) {
-            e.stopPropagation();
-        }, { passive: true });
-    });
+    console.log('拖动功能已初始化');
 }
 
 // 保存笔记
@@ -478,7 +455,23 @@ document.addEventListener('DOMContentLoaded', function() {
             // 提交表单保存笔记
             document.getElementById('editForm').submit();
             
-            
+            // 显示保存提示
+            const saveNotification = document.createElement('div');
+            saveNotification.textContent = '正在保存...';
+            saveNotification.style.position = 'fixed';
+            saveNotification.style.bottom = '20px';
+            saveNotification.style.right = '20px';
+            saveNotification.style.padding = '10px 20px';
+            saveNotification.style.backgroundColor = 'rgba(40, 167, 69, 0.9)';
+            saveNotification.style.color = 'white';
+            saveNotification.style.borderRadius = '4px';
+            saveNotification.style.zIndex = '10000';
+            document.body.appendChild(saveNotification);
+
+            // 2秒后移除提示
+            setTimeout(() => {
+                document.body.removeChild(saveNotification);
+            }, 2000);
             
             return false;
         }
