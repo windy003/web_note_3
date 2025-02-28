@@ -97,15 +97,6 @@
 }
 
 
-
-.exit-fullscreen {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    z-index: 10000;
-    display: none;
-}
-
 @media (max-width: 768px) {
     #content {
         font-size: 20px;
@@ -233,10 +224,7 @@ function exitFullscreen() {
     document.body.style.overflow = 'auto';
 }
 
-document.querySelector('.exit-fullscreen').addEventListener('click', function(e) {
-    e.preventDefault();
-    exitFullscreen();
-});
+
 
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
