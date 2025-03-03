@@ -316,13 +316,7 @@ function setFontSize(size) {
         console.error('保存字体大小到 localStorage 失败:', e);
     }
     
-    // 如果在全屏模式下，也更新全屏 textarea 的字体大小
-    if (document.body.classList.contains('editor-is-fullscreen')) {
-        const fullscreenTextarea = document.getElementById('fullscreen-textarea');
-        if (fullscreenTextarea) {
-            fullscreenTextarea.style.fontSize = size + 'px';
-        }
-    }
+   
 }
 
 function loadFontSize() {
@@ -370,17 +364,6 @@ function toggleCodeMode() {
         console.error('保存代码模式状态到 localStorage 失败:', e);
     }
     
-    // 如果在全屏模式下，也更新全屏 textarea 的代码模式
-    if (document.body.classList.contains('editor-is-fullscreen')) {
-        const fullscreenTextarea = document.getElementById('fullscreen-textarea');
-        if (fullscreenTextarea) {
-            if (textarea.classList.contains('code-mode')) {
-                fullscreenTextarea.classList.add('code-mode');
-            } else {
-                fullscreenTextarea.classList.remove('code-mode');
-            }
-        }
-    }
 }
 
 function loadCodeModeState() {
@@ -420,21 +403,6 @@ function loadCodeModeState() {
 function saveNote(message = '正在保存...') {
     const noteId = getNoteId();
     
-    // 如果在全屏模式下，先同步内容
-    if (document.body.classList.contains('editor-is-fullscreen')) {
-        const textarea = document.getElementById('content');
-        const fullscreenTextarea = document.getElementById('fullscreen-textarea');
-        textarea.value = fullscreenTextarea.value;
-        
-        // 同步字体大小
-        const currentSize = parseInt(window.getComputedStyle(fullscreenTextarea).fontSize);
-        setFontSize(currentSize);
-    } else {
-        // 保存字体大小
-        const textarea = document.getElementById('content');
-        const currentSize = parseInt(window.getComputedStyle(textarea).fontSize);
-        setFontSize(currentSize);
-    }
     
     // 保存代码模式状态
     const textarea = document.getElementById('content');
