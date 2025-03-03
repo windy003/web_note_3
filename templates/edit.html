@@ -40,7 +40,7 @@
                             </a>
                         </div>
                     </div>
-                    <textarea class="form-control" id="content" name="content" rows="10">{{ note.content }}</textarea>
+                    <textarea class="form-control" id="content" name="content" rows="25">{{ note.content }}</textarea>
                     
                     <!-- 全屏模式下的控制按钮 -->
                     <div id="fullscreen-controls" class="d-none">
@@ -105,8 +105,8 @@
     white-space: pre !important;
     tab-size: 4 !important;
     -moz-tab-size: 4 !important;
-    background-color: #272822 !important;
-    color: #f8f8f2 !important;
+    /* background-color: #272822 !important; */
+    /* color: #f8f8f2 !important; */
     overflow-x: auto !important;
 }
 
@@ -260,11 +260,7 @@ function getNoteId() {
 
 // 2. 定义通知函数
 function showNotification(message, type = 'info') {
-    // 移除之前的通知
-    const existingNotifications = document.querySelectorAll('.save-notification');
-    existingNotifications.forEach(notification => {
-        notification.remove();
-    });
+    
     
     // 创建新通知
     const notification = document.createElement('div');
