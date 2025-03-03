@@ -26,7 +26,7 @@
                             <button type="button" class="btn btn-sm btn-outline-secondary" onclick="decreaseFontSize()" title="缩小字体">
                                 <i class="bi bi-zoom-out"></i>
                             </button>
-                            <button type="button" id="code-mode-btn" class="btn btn-sm btn-outline-secondary" onclick="toggleCodeMode()" title="代码模式">
+                            <button type="button" id="codeModeBtn" class="btn btn-sm btn-outline-secondary" onclick="toggleCodeMode()" title="代码模式">
                                 <i class="bi bi-code-slash"></i>
                             </button>
                             <button type="submit" class="btn btn-sm btn-primary" title="保存">
@@ -97,7 +97,11 @@
     font-size: 22px;
     line-height: 1.8;
     padding: 20px;
+    white-space: pre-wrap; /* 保留空白符，但允许自动换行 */
+
 }
+
+
 
 /* 代码模式样式 */
 .code-mode {
@@ -232,11 +236,33 @@
     border-radius: 0.25rem;
 }
 
-/* 激活的代码模式按钮 */
-.btn-code-active {
+/* edit页面激活的代码模式按钮 */
+#codeModeBtn.active {
     background-color: #6c757d !important;
     color: white !important;
 }
+
+
+/* edit页面未激活激活的代码模式按钮 */
+#codeModeBtn {
+    background-color: #f9f9fa !important;
+    color: rgb(9, 9, 9) !important;
+}
+
+/* 全屏 页面激活的代码模式按钮 */
+#fullscreen-code-btn.active {
+    background-color: #6c757d !important;
+    color: white !important;
+}
+
+
+/* 全屏 页面未激活激活的代码模式按钮 */
+#fullscreen-code-btn {
+    background-color: #f9f9fa !important;
+    color: rgb(9, 9, 9) !important;
+}
+
+
 </style>
 
 <script>
@@ -346,14 +372,30 @@ function toggleCodeMode() {
     const noteId = getNoteId();
     const textarea = document.getElementById('content');
     const codeBtn = document.getElementById('codeModeBtn');
+    const fsCodeBtn = document.getElementById('fullscreen-code-btn');
     
     // 切换代码模式类
     textarea.classList.toggle('code-mode');
     
+    const isCodeMode = textarea.classList.contains('code-mode');
+    
+    
     // 更新按钮状态
-    if (codeBtn) {
-        codeBtn.classList.toggle('active');
+    if (codeBtn && isCodeMode) {
+        codeBtn.classList.add('active');
     }
+    else {
+        codeBtn.classList.remove('active');
+    }
+
+    // 更新按钮状态
+    if (fsCodeBtn && isCodeMode) {
+        fsCodeBtn.classList.add('active');
+    }
+    else {
+        fsCodeBtn.classList.remove('active');
+    }
+    
     
     // 保存状态到 localStorage
     try {
@@ -582,11 +624,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // 设置代码模式按钮事件
-    const codeModeBtn = document.getElementById('codeModeBtn');
-    if (codeModeBtn) {
-        codeModeBtn.addEventListener('click', toggleCodeMode);
-    }
     
     // 记录当前笔记 ID
     console.log('当前笔记 ID:', getNoteId());
