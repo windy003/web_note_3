@@ -243,31 +243,76 @@
 // 初始化变量
 let isCodeMode = false;
 
-// 切换代码模式
+// 切换代码模式并保存状态
 function toggleCodeMode() {
+    const noteId = getNoteId();
     const textarea = document.getElementById('content');
     const codeBtn = document.getElementById('code-mode-btn');
-    const fullscreenCodeBtn = document.getElementById('fullscreen-code-btn');
     
-    isCodeMode = !isCodeMode;
+    // 切换代码模式类
+    textarea.classList.toggle('code-mode');
     
-    if (isCodeMode) {
-        // 启用代码模式
-        textarea.classList.add('code-mode');
-        codeBtn.classList.add('btn-code-active');
-        if (fullscreenCodeBtn) fullscreenCodeBtn.classList.add('btn-code-active');
-        
-        // 保存代码模式状态
-        localStorage.setItem('note_{{ note.id }}_codeMode', 'true');
-    } else {
-        // 禁用代码模式
-        textarea.classList.remove('code-mode');
-        codeBtn.classList.remove('btn-code-active');
-        if (fullscreenCodeBtn) fullscreenCodeBtn.classList.remove('btn-code-active');
-        
-        // 保存代码模式状态
-        localStorage.setItem('note_{{ note.id }}_codeMode', 'false');
+    // 更新按钮状态
+    if (codeBtn) {
+        codeBtn.classList.toggle('btn-code-active');
     }
+    
+    // 保存状态到 localStorage
+    try {
+        const isCodeMode = textarea.classList.contains('code-mode');
+        localStorage.setItem(`note_${noteId}_codeMode`, isCodeMode ? 'true' : 'false');
+        console.log(`已保存笔记 ${noteId} 的代码模式状态: ${isCodeMode}`);
+    } catch (e) {
+        console.error('保存代码模式状态到 localStorage 失败:', e);
+    }
+    
+    // 如果在全屏模式下，也更新全屏 textarea 的代码模式
+    if (document.body.classList.contains('editor-is-fullscreen')) {
+        const fullscreenTextarea = document.getElementById('fullscreen-textarea');
+        if (fullscreenTextarea) {
+            if (textarea.classList.contains('code-mode')) {
+                fullscreenTextarea.classList.add('code-mode');
+            } else {
+                fullscreenTextarea.classList.remove('code-mode');
+            }
+        }
+    }
+}
+
+// 从 localStorage 读取代码模式状态
+function loadCodeModeState() {
+    const noteId = getNoteId();
+    const textarea = document.getElementById('content');
+    const codeBtn = document.getElementById('code-mode-btn');
+    
+    try {
+        // 尝试获取特定笔记的代码模式状态
+        const savedState = localStorage.getItem(`note_${noteId}_codeMode`);
+        
+        if (savedState) {
+            const isCodeMode = savedState === 'true';
+            
+            if (isCodeMode) {
+                textarea.classList.add('code-mode');
+                if (codeBtn) {
+                    codeBtn.classList.add('btn-code-active');
+                }
+            } else {
+                textarea.classList.remove('code-mode');
+                if (codeBtn) {
+                    codeBtn.classList.remove('btn-code-active');
+                }
+            }
+            
+            console.log(`已加载笔记 ${noteId} 的代码模式状态: ${isCodeMode}`);
+            return isCodeMode;
+        }
+    } catch (e) {
+        console.error('从 localStorage 读取代码模式状态失败:', e);
+    }
+    
+    // 如果没有保存过或出错，默认不使用代码模式
+    return false;
 }
 
 function toggleFullscreen() {
@@ -310,12 +355,54 @@ function getCurrentFontSize() {
     return parseFloat(style.fontSize);
 }
 
+// 设置字体大小并保存到 localStorage
 function setFontSize(size) {
+    const noteId = getNoteId();
     const textarea = document.getElementById('content');
     
-    textarea.style.setProperty('font-size', size + 'px', 'important');
+    // 应用字体大小
+    textarea.style.fontSize = size + 'px';
     
-    localStorage.setItem('noteFontSize', size);
+    // 保存到 localStorage，使用笔记 ID 作为键的一部分
+    try {
+        localStorage.setItem(`note_${noteId}_fontSize`, size);
+        console.log(`已保存笔记 ${noteId} 的字体大小: ${size}px`);
+    } catch (e) {
+        console.error('保存字体大小到 localStorage 失败:', e);
+    }
+    
+    // 如果在全屏模式下，也更新全屏 textarea 的字体大小
+    if (document.body.classList.contains('editor-is-fullscreen')) {
+        const fullscreenTextarea = document.getElementById('fullscreen-textarea');
+        if (fullscreenTextarea) {
+            fullscreenTextarea.style.fontSize = size + 'px';
+        }
+    }
+}
+
+// 从 localStorage 读取字体大小
+function loadFontSize() {
+    const noteId = getNoteId();
+    const textarea = document.getElementById('content');
+    
+    try {
+        // 尝试获取特定笔记的字体大小
+        const savedSize = localStorage.getItem(`note_${noteId}_fontSize`);
+        
+        if (savedSize) {
+            const size = parseInt(savedSize);
+            textarea.style.fontSize = size + 'px';
+            console.log(`已加载笔记 ${noteId} 的字体大小: ${size}px`);
+            return size;
+        }
+    } catch (e) {
+        console.error('从 localStorage 读取字体大小失败:', e);
+    }
+    
+    // 如果没有保存过或出错，使用默认值
+    const defaultSize = 16;
+    textarea.style.fontSize = defaultSize + 'px';
+    return defaultSize;
 }
 
 function increaseFontSize() {
@@ -331,26 +418,35 @@ function decreaseFontSize() {
 }
 
 // 保存笔记
-function saveNote() {
+function saveNote(message = '正在保存...') {
+    const noteId = getNoteId();
+    
+    // 如果在全屏模式下，先同步内容
+    if (document.body.classList.contains('editor-is-fullscreen')) {
+        const textarea = document.getElementById('content');
+        const fullscreenTextarea = document.getElementById('fullscreen-textarea');
+        textarea.value = fullscreenTextarea.value;
+        
+        // 同步字体大小
+        const currentSize = parseInt(window.getComputedStyle(fullscreenTextarea).fontSize);
+        setFontSize(currentSize);
+    } else {
+        // 保存字体大小
+        const textarea = document.getElementById('content');
+        const currentSize = parseInt(window.getComputedStyle(textarea).fontSize);
+        setFontSize(currentSize);
+    }
+    
+    // 保存代码模式状态
+    const textarea = document.getElementById('content');
+    const isCodeMode = textarea.classList.contains('code-mode');
+    localStorage.setItem(`note_${noteId}_codeMode`, isCodeMode ? 'true' : 'false');
+    
+    // 提交表单
     document.getElementById('editForm').submit();
 
     // 显示保存提示
-    const saveNotification = document.createElement('div');
-    saveNotification.textContent = '正在保存...';
-    saveNotification.style.position = 'fixed';
-    saveNotification.style.bottom = '20px';
-    saveNotification.style.right = '20px';
-    saveNotification.style.padding = '10px 20px';
-    saveNotification.style.backgroundColor = 'rgba(40, 167, 69, 0.9)';
-    saveNotification.style.color = 'white';
-    saveNotification.style.borderRadius = '4px';
-    saveNotification.style.zIndex = '10000';
-    document.body.appendChild(saveNotification);
-
-    // 2秒后移除提示
-    setTimeout(() => {
-        document.body.removeChild(saveNotification);
-    }, 2000);
+    showNotification(message, 'success');
 }
 
 // 取消编辑
@@ -377,39 +473,47 @@ function confirmDelete() {
     }
 }
 
-// 在文档加载完成后检查代码模式状态
+// 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
-    const textarea = document.getElementById('content');
-    const codeBtn = document.getElementById('code-mode-btn');
-    const fullscreenCodeBtn = document.getElementById('fullscreen-code-btn');
+    // 加载保存的字体大小
+    loadFontSize();
     
-    // 检查是否之前启用了代码模式
-    isCodeMode = localStorage.getItem('note_{{ note.id }}_codeMode') === 'true';
+    // 加载保存的代码模式状态
+    loadCodeModeState();
     
-    if (isCodeMode) {
-        textarea.classList.add('code-mode');
-        codeBtn.classList.add('btn-code-active');
-        if (fullscreenCodeBtn) fullscreenCodeBtn.classList.add('btn-code-active');
+    // 设置字体大小增减按钮事件
+    const increaseBtn = document.getElementById('increaseFontBtn');
+    const decreaseBtn = document.getElementById('decreaseFontBtn');
+    
+    if (increaseBtn) {
+        increaseBtn.addEventListener('click', function() {
+            const textarea = document.getElementById('content');
+            const currentSize = parseInt(window.getComputedStyle(textarea).fontSize);
+            const newSize = Math.min(currentSize + 2, 32); // 设置最大字体大小为 32px
+            setFontSize(newSize);
+        });
     }
     
-    // 设置保存的字体大小
-    const savedSize = localStorage.getItem('noteFontSize');
-    if (savedSize) {
-        setFontSize(parseFloat(savedSize));
+    if (decreaseBtn) {
+        decreaseBtn.addEventListener('click', function() {
+            const textarea = document.getElementById('content');
+            const currentSize = parseInt(window.getComputedStyle(textarea).fontSize);
+            const newSize = Math.max(currentSize - 2, 12); // 设置最小字体大小为 12px
+            setFontSize(newSize);
+        });
     }
     
-    // 初始化拖动功能
-    initDraggable();
+    // 设置代码模式按钮事件
+    const codeModeBtn = document.getElementById('codeModeBtn');
+    if (codeModeBtn) {
+        codeModeBtn.addEventListener('click', toggleCodeMode);
+    }
     
-    // 添加键盘快捷键监听器
-    document.addEventListener('keydown', function(e) {
-        // 检测 Ctrl+Shift+S 组合键
-        if (e.ctrlKey && e.shiftKey && (e.key === 'S' || e.key === 's')) {
-            e.preventDefault();
-            saveNote();
-            return false;
-        }
-    });
+    // 设置键盘快捷键
+    setupKeyboardShortcuts();
+    
+    // 记录当前笔记 ID
+    console.log('当前笔记 ID:', getNoteId());
 });
 
 // 初始化拖动功能
@@ -497,6 +601,27 @@ function initDraggable() {
     // 为拖动手柄添加拖动开始事件监听器
     dragHandle.addEventListener('mousedown', startDrag);
     dragHandle.addEventListener('touchstart', startDrag, { passive: false });
+}
+
+// 从 URL 中获取笔记 ID
+function getNoteId() {
+    // 从 URL 中提取笔记 ID
+    const urlPath = window.location.pathname;
+    const matches = urlPath.match(/\/note\/(\d+)\/edit/);
+    
+    if (matches && matches[1]) {
+        return matches[1];
+    }
+    
+    // 如果 URL 中没有找到，尝试从页面中的隐藏字段获取
+    const noteIdField = document.getElementById('note_id');
+    if (noteIdField) {
+        return noteIdField.value;
+    }
+    
+    // 如果都没有找到，返回一个默认值
+    console.warn('无法确定笔记 ID，使用默认值');
+    return 'default';
 }
 </script>
 {% endblock %} 
