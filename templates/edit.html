@@ -399,7 +399,6 @@ function toggleCodeMode() {
     
     // 保存状态到 localStorage
     try {
-        const isCodeMode = textarea.classList.contains('code-mode');
         localStorage.setItem(`note_${noteId}_codeMode`, isCodeMode ? 'true' : 'false');
         console.log(`已保存笔记 ${noteId} 的代码模式状态: ${isCodeMode}`);
     } catch (e) {
