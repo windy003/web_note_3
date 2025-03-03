@@ -572,38 +572,18 @@ function setupKeyboardShortcuts() {
             saveNote('使用 Ctrl+Shift+S 保存成功');
             return;
         }
+
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            toggleFullscreen();
+            showNotification('已退出全屏模式', 'info');
+            return;
+        }
+
     });
     
-    // 如果在全屏模式下，也需要为全屏textarea添加快捷键
-    document.addEventListener('fullscreenchange', updateFullscreenShortcuts);
-    document.addEventListener('webkitfullscreenchange', updateFullscreenShortcuts);
-    document.addEventListener('mozfullscreenchange', updateFullscreenShortcuts);
-    document.addEventListener('MSFullscreenChange', updateFullscreenShortcuts);
 }
 
-// 8. 更新全屏模式下的快捷键
-function updateFullscreenShortcuts() {
-    if (document.body.classList.contains('editor-is-fullscreen')) {
-        const fullscreenTextarea = document.getElementById('fullscreen-textarea');
-        if (fullscreenTextarea) {
-            fullscreenTextarea.addEventListener('keydown', function(e) {
-                // Ctrl+S 快捷键
-                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's' && !e.shiftKey) {
-                    e.preventDefault();
-                    saveNote('使用 Ctrl+S 保存成功');
-                    return;
-                }
-                
-                // Ctrl+Shift+S 快捷键
-                if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 's') {
-                    e.preventDefault();
-                    saveNote('使用 Ctrl+Shift+S 保存成功');
-                    return;
-                }
-            });
-        }
-    }
-}
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
