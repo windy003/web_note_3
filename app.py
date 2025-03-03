@@ -179,18 +179,6 @@ def create():
         return redirect(url_for('index'))
     return render_template('create.html')
 
-@app.route('/fullscreen_edit/<int:note_id>')
-def fullscreen_edit(note_id):
-    # 获取笔记
-    note = get_note_by_id(note_id)  # 确保这个函数能正确获取笔记
-    if not note:
-        flash('笔记不存在')
-        return redirect(url_for('index'))
-    
-    # 打印调试信息
-    print(f"正在加载全屏编辑页面，笔记ID: {note_id}")
-    
-    return render_template('fullscreen_edit.html', note=note)
 
 if __name__ == '__main__':
     with app.app_context():
