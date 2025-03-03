@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, abort
+from flask import Flask, render_template, request, redirect, url_for, flash, abort, jsonify
 from datetime import datetime
 import sqlite3
 import os
@@ -122,16 +122,26 @@ def view_note(note_id):
 @login_required
 def edit_note(note_id):
     note = Note.query.get_or_404(note_id)
+    
+    # 检查权限
     if note.user_id != current_user.id:
-        flash('您没有权限编辑这个笔记', 'danger')
+        flash('您没有权限编辑此笔记', 'danger')
         return redirect(url_for('index'))
+    
     if request.method == 'POST':
-        note.title = request.form['title']
-        note.content = request.form['content']
-        note.updated_at = datetime.now(pytz.timezone('Asia/Shanghai'))
+        note.title = request.form.get('title')
+        note.content = request.form.get('content')
+        note.updated_at = datetime.now()
+        
         db.session.commit()
-        flash('笔记已更新', 'success')  # 使用 'success' 类别使消息显示为绿色
+        
+        # 检查是否是 AJAX 请求
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': True, 'message': '笔记已保存'})
+        
+        flash('笔记已更新', 'success')
         return redirect(url_for('view_note', note_id=note.id))
+    
     return render_template('edit.html', note=note)
 
 @app.route('/note/<int:note_id>/delete', methods=['POST'])
@@ -168,6 +178,19 @@ def create():
         flash('笔记已创建')
         return redirect(url_for('index'))
     return render_template('create.html')
+
+@app.route('/fullscreen_edit/<int:note_id>')
+def fullscreen_edit(note_id):
+    # 获取笔记
+    note = get_note_by_id(note_id)  # 确保这个函数能正确获取笔记
+    if not note:
+        flash('笔记不存在')
+        return redirect(url_for('index'))
+    
+    # 打印调试信息
+    print(f"正在加载全屏编辑页面，笔记ID: {note_id}")
+    
+    return render_template('fullscreen_edit.html', note=note)
 
 if __name__ == '__main__':
     with app.app_context():
