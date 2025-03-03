@@ -345,6 +345,9 @@ function setFontSize(size) {
    
 }
 
+
+
+// 加载字体大小
 function loadFontSize() {
     const noteId = getNoteId();
     const textarea = document.getElementById('content');
@@ -369,6 +372,8 @@ function loadFontSize() {
 
 // 4. 定义代码模式相关函数
 function toggleCodeMode() {
+    
+    // 获取文档结构中的对象
     const noteId = getNoteId();
     const textarea = document.getElementById('content');
     const codeBtn = document.getElementById('codeModeBtn');
@@ -377,10 +382,11 @@ function toggleCodeMode() {
     // 切换代码模式类
     textarea.classList.toggle('code-mode');
     
+    // 获取codeMode状态
     const isCodeMode = textarea.classList.contains('code-mode');
     
     
-    // 更新按钮状态
+    // 更新edit界面按钮状态
     if (codeBtn && isCodeMode) {
         codeBtn.classList.add('active');
     }
@@ -388,7 +394,7 @@ function toggleCodeMode() {
         codeBtn.classList.remove('active');
     }
 
-    // 更新按钮状态
+    // 更新全屏界面按钮状态
     if (fsCodeBtn && isCodeMode) {
         fsCodeBtn.classList.add('active');
     }
@@ -442,13 +448,11 @@ function loadCodeModeState() {
 
 // 5. 定义保存函数
 function saveNote(message = '正在保存...') {
+    
+    // 获取笔记ID
     const noteId = getNoteId();
     
     
-    // 保存代码模式状态
-    const textarea = document.getElementById('content');
-    const isCodeMode = textarea.classList.contains('code-mode');
-    localStorage.setItem(`note_${noteId}_codeMode`, isCodeMode ? 'true' : 'false');
     
     // 显示保存中提示
     showNotification(message, 'info');
