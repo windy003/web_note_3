@@ -129,10 +129,13 @@ def edit_note(note_id):
         return redirect(url_for('index'))
     
     if request.method == 'POST':
+        
+        # 获得从表单传来的数据
         note.title = request.form.get('title')
         note.content = request.form.get('content')
         note.updated_at = datetime.now()
         
+        # 提交到数据库
         db.session.commit()
         
         # 检查是否是 AJAX 请求
