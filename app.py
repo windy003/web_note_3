@@ -12,7 +12,7 @@ import pytz
 from markupsafe import Markup
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-goes-here'  # 使用安全的随机字符串
+app.config['SECRET_KEY'] = 'ALLrise258023'  # 使用安全的随机字符串
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///notes.db'
 db = SQLAlchemy(app)
 login_manager = LoginManager()
