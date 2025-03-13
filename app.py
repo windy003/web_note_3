@@ -26,12 +26,32 @@ def nl2br_filter(s):
         return ""
     return Markup(s.replace('\n', '<br>'))
 
+# 修改时间过滤器，确保正确处理时区
+@app.template_filter('format_datetime')
+def format_datetime(dt):
+    if not dt:
+        return ""
+    # 确保时间是北京时区
+    beijing_tz = pytz.timezone('Asia/Shanghai')
+    # 如果时间没有时区信息，假设它是UTC时间，然后转换到北京时间
+    if dt.tzinfo is None:
+        # 先将其视为UTC时间
+        dt = dt.replace(tzinfo=pytz.UTC)
+        # 然后转换到北京时间
+        dt = dt.astimezone(beijing_tz)
+    elif dt.tzinfo != beijing_tz:
+        # 如果有时区但不是北京时区，转换到北京时区
+        dt = dt.astimezone(beijing_tz)
+    # 格式化为易读的时间格式
+    return dt.strftime('%Y-%m-%d %H:%M:%S')
+
 class Note(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=True)
     content = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(pytz.timezone('Asia/Shanghai')))
-    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(pytz.timezone('Asia/Shanghai')), onupdate=lambda: datetime.now(pytz.timezone('Asia/Shanghai')))
+    # 使用UTC时间存储，显示时再转换
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
@@ -111,6 +131,7 @@ def index():
 @app.route('/note/<int:note_id>')
 @login_required
 def view_note(note_id):
+    print(f"正在查看笔记 ID: {note_id}")
     note = Note.query.get_or_404(note_id)
     if note.user_id != current_user.id:
         flash('您没有权限查看这个笔记')
@@ -123,22 +144,18 @@ def view_note(note_id):
 def edit_note(note_id):
     note = Note.query.get_or_404(note_id)
     
-    # 检查权限
     if note.user_id != current_user.id:
         flash('您没有权限编辑此笔记', 'danger')
         return redirect(url_for('index'))
     
     if request.method == 'POST':
-        
-        # 获得从表单传来的数据
         note.title = request.form.get('title')
         note.content = request.form.get('content')
-        note.updated_at = datetime.now()
+        # 使用UTC时间
+        note.updated_at = datetime.utcnow()
         
-        # 提交到数据库
         db.session.commit()
         
-        # 检查是否是 AJAX 请求
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return jsonify({'success': True, 'message': '笔记已保存'})
         
@@ -164,17 +181,19 @@ def delete_note(note_id):
 def create():
     if request.method == 'POST':
         title = request.form['title']
-        content = request.form.get('content', '')  # 使用 get 方法，如果没有内容则默认为空字符串
+        content = request.form.get('content', '')
         
-        if not title:  # 只检查标题是否为空
+        if not title:
             flash('标题不能为空')
             return redirect(url_for('create'))
             
         note = Note(
             title=title,
-            content=content,  # content 可以为空
+            content=content,
             user_id=current_user.id,
-            created_at=datetime.now(pytz.timezone('Asia/Shanghai'))
+            # 使用UTC时间，显示时再转换
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
         )
         db.session.add(note)
         db.session.commit()

@@ -2,7 +2,7 @@ version: '3'
 
 services:
   web:
-    image: windy007008/3-note-web:latest
+    image: windy007008/web_note_3:latest
     restart: always
     ports:
       - "5000:5000"

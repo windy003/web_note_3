@@ -18,9 +18,9 @@
                             <h5 class="card-title">{{ note.title }}</h5>
                             <p class="card-text text-muted">
                                 {% if note.updated_at %}
-                                更新于: {{ note.updated_at.strftime('%Y-%m-%d %H:%M') }}
+                                更新于: <span>{{ note.updated_at|format_datetime }}</span>
                                 {% else %}
-                                创建于: {{ note.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                创建于: <span></span>{{ note.created_at|format_datetime }}</span>
                                 {% endif %}
                             </p>
                             <a href="{{ url_for('edit_note', note_id=note.id) }}" class="btn btn-outline-primary">编辑笔记</a>
