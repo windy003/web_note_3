@@ -15,7 +15,13 @@
                 <div class="col-md-6 col-lg-4 mb-4">
                     <div class="card h-100">
                         <div class="card-body">
-                            <h5 class="card-title">{{ note.title }}</h5>
+                            <h5 class="card-title" >{{ note.title }}</h5>
+                            <p class="card-text" >
+                                {% if not note.content %}
+                                    <span style="color:
+                                    #fd0707;">空</span>
+                                {% endif %}
+                            </p>
                             <p class="card-text text-muted">
                                 {% if note.updated_at %}
                                 更新于: <span>{{ note.updated_at|format_datetime }}</span>

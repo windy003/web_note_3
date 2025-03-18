@@ -9,7 +9,7 @@ services:
     volumes:
       - ./instance:/app/instance:rw  # 明确指定读写权限
     environment:
-      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY}
+      - FLASK_SECRET_KEY="ALLrise258023"
       - FLASK_ENV=development  # 标记为开发环境
     restart: always
     user: "1000:1000"  # 使用宿主机的UID:GID

@@ -10,6 +10,9 @@ from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Length, EqualTo, ValidationError
 import pytz
 from markupsafe import Markup
+import dotenv
+
+dotenv.load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')  # 使用安全的随机字符串
