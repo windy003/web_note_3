@@ -220,10 +220,10 @@ if __name__ == '__main__':
             '/etc/ssl/certs/privkey.pem'
         )
         app.debug = True
-        app.run(host='0.0.0.0', port=444, ssl_context=ssl_context)
+        app.run(host='0.0.0.0', port=5000, ssl_context=ssl_context)
     else:
         # 开发环境启用调试模式
         app.debug = True
-        app.run(host='0.0.0.0', port=444) 
+        app.run(host='0.0.0.0', port=5000) 
 
 
