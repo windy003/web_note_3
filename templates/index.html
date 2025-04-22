@@ -15,7 +15,14 @@
                 <div class="col-md-6 col-lg-4 mb-4">
                     <div class="card h-100">
                         <div class="card-body">
-                            <h5 class="card-title" >{{ note.title }}</h5>
+                            <h5 class="card-title" >
+                                {% if note.title == "待做" %}
+                                    <span style="color:
+                                    #fd0707;">{{ note.title }}</span>
+                                {% else %}
+                                    {{ note.title }}
+                                {% endif %}
+                            </h5>
                             <p class="card-text" >
                                 {% if not note.content %}
                                     <span style="color:
