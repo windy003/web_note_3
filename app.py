@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, abort, jsonify
-from datetime import datetime
+from datetime import datetime, timedelta
 import sqlite3
 import os
 from flask_sqlalchemy import SQLAlchemy
@@ -17,6 +17,7 @@ dotenv.load_dotenv()
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')  # 使用安全的随机字符串
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///notes.db'
+app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=30)  # 保持登录30天
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -99,8 +100,8 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
-        if user and user.check_password(form.password.data):
-            login_user(user)
+        if user and check_password_hash(user.password_hash, form.password.data):
+            login_user(user, remember=request.form.get('remember') == 'on')
             return redirect(url_for('index'))
         flash('用户名或密码错误')
     return render_template('login.html', form=form)
