@@ -16,7 +16,7 @@
                     <div class="card h-100">
                         <div class="card-body">
                             <h5 class="card-title" >
-                                {% if note.title == "待做" %}
+                                {% if note.title == "待做" or note.title == "待记忆" %}
                                     <span style="color:
                                     #fd0707;">{{ note.title }}</span>
                                 {% else %}
