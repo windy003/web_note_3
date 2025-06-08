@@ -23,12 +23,6 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# 添加 nl2br 过滤器
-@app.template_filter('nl2br')
-def nl2br_filter(s):
-    if not s:
-        return ""
-    return Markup(s.replace('\n', '<br>'))
 
 # 修改时间过滤器，确保正确处理时区
 @app.template_filter('format_datetime')
