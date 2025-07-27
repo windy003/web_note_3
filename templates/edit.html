@@ -29,6 +29,9 @@
                             <button type="button" id="codeModeBtn" class="btn btn-sm btn-outline-secondary" onclick="toggleCodeMode()" title="代码模式">
                                 <i class="bi bi-code-slash"></i>
                             </button>
+                            <button type="button" class="btn btn-sm btn-outline-info" onclick="showWordCount()" title="统计字数">
+                                <i class="bi bi-calculator"></i>
+                            </button>
                             <button type="submit" class="btn btn-sm btn-primary" title="保存" style="margin-right: 20px;">
                                 <i class="bi bi-check-lg"></i>
                             </button>
@@ -55,6 +58,9 @@
                         </button>
                         <button type="button" id="fullscreen-code-btn" class="btn btn-sm btn-light control-btn" onclick="toggleCodeMode()">
                             <i class="bi bi-code-slash"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-light control-btn" onclick="showWordCount()" title="统计字数">
+                            <i class="bi bi-calculator"></i>
                         </button>
                         <button type="button" class="btn btn-sm btn-success control-btn" onclick="saveNote()">
                             <i class="bi bi-check-lg"></i>
@@ -532,6 +538,132 @@ function decreaseFontSize() {
     const currentSize = getCurrentFontSize();
     const newSize = Math.max(12, currentSize - 2);
     setFontSize(newSize);
+}
+
+// 统计字数和字符数
+function showWordCount() {
+    const textarea = document.getElementById('content');
+    const content = textarea.value;
+    
+    // 统计字符数（包括空格）
+    const charCount = content.length;
+    
+    // 统计字符数（不包括空格）
+    const charCountNoSpaces = content.replace(/\s/g, '').length;
+    
+    // 统计单词数（按空白字符分割）
+    const wordCount = content.trim().split(/\s+/).filter(word => word.length > 0).length;
+    
+    // 统计行数
+    const lineCount = content.split('\n').length;
+    
+    // 构建统计信息
+    let statsMessage = `字符数: ${charCount}`;
+    if (charCountNoSpaces !== charCount) {
+        statsMessage += ` (不含空格: ${charCountNoSpaces})`;
+    }
+    statsMessage += `\n单词数: ${wordCount}`;
+    statsMessage += `\n行数: ${lineCount}`;
+    
+    // 创建自定义的统计显示弹窗
+    showWordCountModal(charCount, charCountNoSpaces, wordCount, lineCount);
+}
+
+// 显示字数统计模态框
+function showWordCountModal(charCount, charCountNoSpaces, wordCount, lineCount) {
+    // 移除已存在的模态框
+    const existingModal = document.getElementById('wordCountModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // 创建模态框
+    const modal = document.createElement('div');
+    modal.id = 'wordCountModal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 10001;
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        min-width: 280px;
+        max-width: 400px;
+        border: 1px solid #dee2e6;
+    `;
+    
+    modal.innerHTML = `
+        <div style="text-align: center;">
+            <h5 style="margin-bottom: 20px; color: #333; font-weight: 600;">
+                <i class="bi bi-calculator" style="margin-right: 8px;"></i>
+                文字统计
+            </h5>
+            <div style="text-align: left; margin-bottom: 20px;">
+                <div style="margin-bottom: 12px; padding: 8px; background-color: #f8f9fa; border-radius: 4px;">
+                    <strong>字符数:</strong> <span style="color: #007bff;">${charCount.toLocaleString()}</span>
+                </div>
+                <div style="margin-bottom: 12px; padding: 8px; background-color: #f8f9fa; border-radius: 4px;">
+                    <strong>字符数 (不含空格):</strong> <span style="color: #28a745;">${charCountNoSpaces.toLocaleString()}</span>
+                </div>
+                <div style="margin-bottom: 12px; padding: 8px; background-color: #f8f9fa; border-radius: 4px;">
+                    <strong>单词数:</strong> <span style="color: #ffc107;">${wordCount.toLocaleString()}</span>
+                </div>
+                <div style="margin-bottom: 12px; padding: 8px; background-color: #f8f9fa; border-radius: 4px;">
+                    <strong>行数:</strong> <span style="color: #dc3545;">${lineCount.toLocaleString()}</span>
+                </div>
+            </div>
+            <button onclick="closeWordCountModal()" style="
+                background-color: #007bff;
+                color: white;
+                border: none;
+                padding: 8px 20px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 14px;
+            ">确定</button>
+        </div>
+    `;
+    
+    // 创建背景遮罩
+    const overlay = document.createElement('div');
+    overlay.id = 'wordCountOverlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        z-index: 10000;
+    `;
+    
+    // 点击遮罩关闭模态框
+    overlay.onclick = closeWordCountModal;
+    
+    // 添加到页面
+    document.body.appendChild(overlay);
+    document.body.appendChild(modal);
+    
+    // ESC键关闭模态框
+    const handleEsc = (e) => {
+        if (e.key === 'Escape') {
+            closeWordCountModal();
+            document.removeEventListener('keydown', handleEsc);
+        }
+    };
+    document.addEventListener('keydown', handleEsc);
+}
+
+// 关闭字数统计模态框
+function closeWordCountModal() {
+    const modal = document.getElementById('wordCountModal');
+    const overlay = document.getElementById('wordCountOverlay');
+    
+    if (modal) modal.remove();
+    if (overlay) overlay.remove();
 }
 
 // 取消编辑
