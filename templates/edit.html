@@ -32,6 +32,9 @@
                             <button type="button" class="btn btn-sm btn-outline-info" onclick="showWordCount()" title="统计字数">
                                 <i class="bi bi-calculator"></i>
                             </button>
+                            <button type="button" class="btn btn-sm btn-outline-warning" onclick="reverseTextSegments()" title="文本分隔倒置">
+                                <i class="bi bi-arrow-down-up"></i>
+                            </button>
                             <button type="submit" class="btn btn-sm btn-primary" title="保存" style="margin-right: 20px;margin-left: 20px;">
                                 <i class="bi bi-check-lg"></i>
                             </button>
@@ -61,6 +64,9 @@
                         </button>
                         <button type="button" class="btn btn-sm btn-light control-btn" onclick="showWordCount()" title="统计字数">
                             <i class="bi bi-calculator"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-light control-btn" onclick="reverseTextSegments()" title="文本分隔倒置">
+                            <i class="bi bi-arrow-down-up"></i>
                         </button>
                         <button type="button" class="btn btn-sm btn-success control-btn" onclick="saveNote()">
                             <i class="bi bi-check-lg"></i>
@@ -551,6 +557,12 @@ function showWordCount() {
     // 统计字符数（不包括空格）
     const charCountNoSpaces = content.replace(/\s/g, '').length;
     
+    // 统计字符数（不包括横杠）
+    const charCountNoDashes = content.replace(/-/g, '').length;
+    
+    // 统计字符数（不包括空格和横杠）
+    const charCountNoSpacesNoDashes = content.replace(/[\s-]/g, '').length;
+    
     // 统计单词数（按空白字符分割）
     const wordCount = content.trim().split(/\s+/).filter(word => word.length > 0).length;
     
@@ -566,11 +578,11 @@ function showWordCount() {
     statsMessage += `\n行数: ${lineCount}`;
     
     // 创建自定义的统计显示弹窗
-    showWordCountModal(charCount, charCountNoSpaces, wordCount, lineCount);
+    showWordCountModal(charCount, charCountNoSpaces, charCountNoDashes, charCountNoSpacesNoDashes, wordCount, lineCount);
 }
 
 // 显示字数统计模态框
-function showWordCountModal(charCount, charCountNoSpaces, wordCount, lineCount) {
+function showWordCountModal(charCount, charCountNoSpaces, charCountNoDashes, charCountNoSpacesNoDashes, wordCount, lineCount) {
     // 移除已存在的模态框
     const existingModal = document.getElementById('wordCountModal');
     if (existingModal) {
@@ -590,8 +602,8 @@ function showWordCountModal(charCount, charCountNoSpaces, wordCount, lineCount) 
         border-radius: 8px;
         padding: 24px;
         box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        min-width: 280px;
-        max-width: 400px;
+        min-width: 320px;
+        max-width: 450px;
         border: 1px solid #dee2e6;
     `;
     
@@ -607,6 +619,12 @@ function showWordCountModal(charCount, charCountNoSpaces, wordCount, lineCount) 
                 </div>
                 <div style="margin-bottom: 12px; padding: 8px; background-color: #f8f9fa; border-radius: 4px;">
                     <strong>字符数 (不含空格):</strong> <span style="color: #28a745;">${charCountNoSpaces.toLocaleString()}</span>
+                </div>
+                <div style="margin-bottom: 12px; padding: 8px; background-color: #f8f9fa; border-radius: 4px;">
+                    <strong>字符数 (不含横杠):</strong> <span style="color: #fd7e14;">${charCountNoDashes.toLocaleString()}</span>
+                </div>
+                <div style="margin-bottom: 12px; padding: 8px; background-color: #f8f9fa; border-radius: 4px;">
+                    <strong>字符数 (不含空格和横杠):</strong> <span style="color: #6610f2;">${charCountNoSpacesNoDashes.toLocaleString()}</span>
                 </div>
                 <div style="margin-bottom: 12px; padding: 8px; background-color: #f8f9fa; border-radius: 4px;">
                     <strong>单词数:</strong> <span style="color: #ffc107;">${wordCount.toLocaleString()}</span>
@@ -664,6 +682,91 @@ function closeWordCountModal() {
     
     if (modal) modal.remove();
     if (overlay) overlay.remove();
+}
+
+// 文本分隔倒置功能
+function reverseTextSegments() {
+    const textarea = document.getElementById('content');
+    const content = textarea.value;
+    
+    if (!content.trim()) {
+        showNotification('内容为空，无法进行分隔倒置', 'info');
+        return;
+    }
+    
+    // 按行分割文本
+    const lines = content.split('\n');
+    
+    // 找到所有以至少3个横杠开头的行的索引
+    const separatorIndices = [];
+    lines.forEach((line, index) => {
+        if (line.match(/^-{3,}/)) {
+            separatorIndices.push(index);
+        }
+    });
+    
+    if (separatorIndices.length === 0) {
+        showNotification('未找到以---开头的分隔行', 'info');
+        return;
+    }
+    
+    // 按分隔符分割文本段落
+    const segments = [];
+    let currentStart = 0;
+    
+    separatorIndices.forEach(separatorIndex => {
+        // 添加当前段落（不包括分隔符）
+        if (currentStart <= separatorIndex - 1) {
+            segments.push(lines.slice(currentStart, separatorIndex));
+        }
+        // 添加分隔符行
+        segments.push([lines[separatorIndex]]);
+        currentStart = separatorIndex + 1;
+    });
+    
+    // 添加最后一个段落（如果存在）
+    if (currentStart < lines.length) {
+        segments.push(lines.slice(currentStart));
+    }
+    
+    // 倒置文本段落（保持分隔符在原位置）
+    const reversedSegments = [];
+    const textSegments = [];
+    const separatorPositions = [];
+    
+    // 分离文本段落和分隔符
+    segments.forEach((segment, index) => {
+        if (segment.length === 1 && segment[0].match(/^-{3,}/)) {
+            separatorPositions.push(index);
+        } else {
+            textSegments.push(segment);
+        }
+    });
+    
+    // 倒置文本段落
+    textSegments.reverse();
+    
+    // 重新组合
+    let textIndex = 0;
+    segments.forEach((segment, index) => {
+        if (segment.length === 1 && segment[0].match(/^-{3,}/)) {
+            reversedSegments.push(segment);
+        } else {
+            reversedSegments.push(textSegments[textIndex]);
+            textIndex++;
+        }
+    });
+    
+    // 将结果合并成字符串
+    const resultLines = [];
+    reversedSegments.forEach(segment => {
+        resultLines.push(...segment);
+    });
+    
+    // 更新文档区域内容
+    textarea.value = resultLines.join('\n');
+    
+    showNotification(`成功倒置 ${textSegments.length} 个文本段落`, 'success');
 }
 
 // 取消编辑
