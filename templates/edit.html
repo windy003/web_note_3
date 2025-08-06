@@ -114,6 +114,10 @@
                 <span class="stat-label">行数:</span>
                 <span class="stat-value" id="lineCount">0</span>
             </div>
+            <div class="stat-item">
+                <span class="stat-label">块数:</span>
+                <span class="stat-value" id="blockCount">0</span>
+            </div>
         </div>
     </div>
 </div>
@@ -681,6 +685,9 @@ function showWordCount() {
     // 统计行数
     const lineCount = content.split('\n').length;
     
+    // 统计块数（以3个或更多连续-分隔的块）
+    const blockCount = countBlocks(content);
+    
     // 构建统计信息
     let statsMessage = `字符数: ${charCount}`;
     if (charCountNoSpaces !== charCount) {
@@ -690,11 +697,11 @@ function showWordCount() {
     statsMessage += `\n行数: ${lineCount}`;
     
     // 创建自定义的统计显示弹窗
-    showWordCountModal(charCount, charCountNoSpaces, charCountNoDashes, charCountNoSpacesNoDashes, wordCount, lineCount);
+    showWordCountModal(charCount, charCountNoSpaces, charCountNoDashes, charCountNoSpacesNoDashes, wordCount, lineCount, blockCount);
 }
 
 // 显示字数统计模态框
-function showWordCountModal(charCount, charCountNoSpaces, charCountNoDashes, charCountNoSpacesNoDashes, wordCount, lineCount) {
+function showWordCountModal(charCount, charCountNoSpaces, charCountNoDashes, charCountNoSpacesNoDashes, wordCount, lineCount, blockCount) {
     // 移除已存在的模态框
     const existingModal = document.getElementById('wordCountModal');
     if (existingModal) {
@@ -743,6 +750,9 @@ function showWordCountModal(charCount, charCountNoSpaces, charCountNoDashes, cha
                 </div>
                 <div style="margin-bottom: 12px; padding: 8px; background-color: #f8f9fa; border-radius: 4px;">
                     <strong>行数:</strong> <span style="color: #dc3545;">${lineCount.toLocaleString()}</span>
+                </div>
+                <div style="margin-bottom: 12px; padding: 8px; background-color: #f8f9fa; border-radius: 4px;">
+                    <strong>块数:</strong> <span style="color: #e83e8c;">${blockCount.toLocaleString()}</span>
                 </div>
             </div>
             <button onclick="closeWordCountModal()" style="
@@ -864,6 +874,7 @@ function updateCharCount() {
     const charCountNoSpacesNoDashes = content.replace(/[\s-]/g, '').length;
     const wordCount = content.trim().split(/\s+/).filter(word => word.length > 0).length;
     const lineCount = content.split('\n').length;
+    const blockCount = countBlocks(content);
     
     // 更新面板显示
     document.getElementById('totalChars').textContent = charCount.toLocaleString();
@@ -872,6 +883,7 @@ function updateCharCount() {
     document.getElementById('charsNoSpacesNoDashes').textContent = charCountNoSpacesNoDashes.toLocaleString();
     document.getElementById('wordCount').textContent = wordCount.toLocaleString();
     document.getElementById('lineCount').textContent = lineCount.toLocaleString();
+    document.getElementById('blockCount').textContent = blockCount.toLocaleString();
 }
 
 // 设置字符数实时更新
@@ -1149,6 +1161,55 @@ document.addEventListener('DOMContentLoaded', function() {
     // 记录当前笔记 ID
     console.log('当前笔记 ID:', getNoteId());
 });
+
+// 统计块数功能（以3个或更多连续-分隔的块）
+function countBlocks(content) {
+    if (!content.trim()) {
+        return 0;
+    }
+    
+    // 按行分割文本
+    const lines = content.split('\n');
+    
+    // 找到所有以至少3个横杠开头的行的索引
+    const separatorIndices = [];
+    lines.forEach((line, index) => {
+        if (line.match(/^-{3,}/)) {
+            separatorIndices.push(index);
+        }
+    });
+    
+    // 如果没有分隔符，整个内容算作1块
+    if (separatorIndices.length === 0) {
+        return 1;
+    }
+    
+    // 计算块数：分隔符数量 + 1
+    // 例如：内容-分隔符-内容-分隔符-内容 = 3块
+    let blockCount = separatorIndices.length + 1;
+    
+    // 检查第一块是否为空
+    if (separatorIndices[0] === 0 || lines.slice(0, separatorIndices[0]).every(line => line.trim() === '')) {
+        blockCount--;
+    }
+    
+    // 检查最后一块是否为空
+    const lastSeparator = separatorIndices[separatorIndices.length - 1];
+    if (lastSeparator === lines.length - 1 || lines.slice(lastSeparator + 1).every(line => line.trim() === '')) {
+        blockCount--;
+    }
+    
+    // 检查中间的空块
+    for (let i = 0; i < separatorIndices.length - 1; i++) {
+        const start = separatorIndices[i] + 1;
+        const end = separatorIndices[i + 1];
+        if (lines.slice(start, end).every(line => line.trim() === '')) {
+            blockCount--;
+        }
+    }
+    
+    return Math.max(0, blockCount);
+}
 
 // 初始化拖动功能
 function initDraggable() {
