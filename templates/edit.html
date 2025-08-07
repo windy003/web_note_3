@@ -1103,6 +1103,14 @@ function setupKeyboardShortcuts() {
             return;
         }
 
+        // Ctrl+Shift+- 快捷键 - 插入40个-符号
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === '-' || e.key === '_' || e.keyCode === 189)) {
+            e.preventDefault();
+            e.stopPropagation();
+            insertDashes();
+            return;
+        }
+
         if (e.key === 'Escape') {
             e.preventDefault();
             toggleFullscreen();
@@ -1129,6 +1137,21 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 设置键盘快捷键
     setupKeyboardShortcuts();
+    
+    // 为文本框添加专门的快捷键监听器
+    const textarea = document.getElementById('content');
+    if (textarea) {
+        textarea.addEventListener('keydown', function(e) {
+            // Ctrl+Shift+- 快捷键 - 插入40个-符号
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === '-' || e.key === '_' || e.keyCode === 189)) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                insertDashes();
+                return false;
+            }
+        }, true);
+    }
     
     // 窗口大小变化时重新调整面板位置
     window.addEventListener('resize', function() {
@@ -1161,6 +1184,33 @@ document.addEventListener('DOMContentLoaded', function() {
     // 记录当前笔记 ID
     console.log('当前笔记 ID:', getNoteId());
 });
+
+// 插入40个-符号的功能
+function insertDashes() {
+    const textarea = document.getElementById('content');
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const dashes = '-'.repeat(45);
+    
+    // 获取当前内容
+    const content = textarea.value;
+    
+    // 在光标位置插入40个-符号
+    const newContent = content.substring(0, start) + dashes + content.substring(end);
+    
+    // 更新文本框内容
+    textarea.value = newContent;
+    
+    // 设置光标位置到插入的-符号之后
+    const newCursorPosition = start + dashes.length;
+    textarea.setSelectionRange(newCursorPosition, newCursorPosition);
+    
+    // 聚焦文本框
+    textarea.focus();
+    
+    // 显示通知
+    showNotification('已插入40个"-"符号', 'success');
+}
 
 // 统计块数功能（以3个或更多连续-分隔的块）
 function countBlocks(content) {
