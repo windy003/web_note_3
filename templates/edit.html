@@ -143,6 +143,18 @@
     line-height: 1.8 !important;
 }
 
+/* 为全屏模式添加右侧区域背景 */
+.fullscreen-mode::after {
+    content: '';
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    width: 70px !important;
+    height: 100% !important;
+    background: #fff !important;
+    z-index: 9998 !important;
+}
+
 #content {
     font-size: 22px;
     line-height: 1.8;
@@ -183,6 +195,11 @@
     .fullscreen-textarea {
         font-size: 18px;
         width: calc(100% - 60px) !important;
+    }
+    
+    /* 移动端全屏模式右侧区域背景 */
+    .fullscreen-mode::after {
+        width: 60px !important;
     }
     
     #fullscreen-controls button {
@@ -601,6 +618,7 @@ function toggleFullscreen() {
     
     if (textarea.classList.contains('fullscreen-textarea')) {
         document.body.style.overflow = 'hidden';
+        document.body.classList.add('fullscreen-mode');
         controls.classList.remove('d-none');
         
         // 重置控制面板位置
@@ -618,6 +636,7 @@ function toggleFullscreen() {
         setTimeout(initDraggable, 100);
     } else {
         document.body.style.overflow = '';
+        document.body.classList.remove('fullscreen-mode');
         controls.classList.add('d-none');
     }
     
