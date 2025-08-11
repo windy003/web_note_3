@@ -1147,6 +1147,29 @@ document.addEventListener('DOMContentLoaded', function() {
     const textarea = document.getElementById('content');
     if (textarea) {
         textarea.addEventListener('keydown', function(e) {
+            // Tab 键 - 插入4个空格
+            if (e.key === 'Tab' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+                e.preventDefault();
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const spaces = '    '; // 4个空格
+                
+                // 获取当前内容
+                const content = textarea.value;
+                
+                // 在光标位置插入4个空格
+                const newContent = content.substring(0, start) + spaces + content.substring(end);
+                
+                // 更新文本框内容
+                textarea.value = newContent;
+                
+                // 设置光标位置到插入的空格之后
+                const newCursorPosition = start + spaces.length;
+                textarea.setSelectionRange(newCursorPosition, newCursorPosition);
+                
+                return false;
+            }
+            
             // Ctrl+Shift+- 快捷键 - 插入40个-符号
             if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === '-' || e.key === '_' || e.keyCode === 189)) {
                 e.preventDefault();
