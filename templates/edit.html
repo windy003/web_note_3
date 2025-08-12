@@ -387,6 +387,9 @@
 </style>
 
 <script>
+// 全局状态变量
+let isFullscreenBrowsingMode = false;
+
 // 1. 首先定义工具函数
 function getNoteId() {
     const urlPath = window.location.pathname;
@@ -617,9 +620,14 @@ function toggleFullscreen() {
     textarea.classList.toggle('fullscreen-textarea');
     
     if (textarea.classList.contains('fullscreen-textarea')) {
+        // 进入全屏模式，默认为编辑模式
         document.body.style.overflow = 'hidden';
         document.body.classList.add('fullscreen-mode');
         controls.classList.remove('d-none');
+        isFullscreenBrowsingMode = false;
+        
+        // 聚焦到文本框（编辑模式）
+        textarea.focus();
         
         // 重置控制面板位置
         controls.style.left = '';
@@ -635,13 +643,26 @@ function toggleFullscreen() {
         // 重新初始化拖动功能
         setTimeout(initDraggable, 100);
     } else {
+        // 退出全屏模式
         document.body.style.overflow = '';
         document.body.classList.remove('fullscreen-mode');
         controls.classList.add('d-none');
+        isFullscreenBrowsingMode = false;
     }
     
     // 调整字符数面板位置
     setTimeout(adjustCharCountPanelPosition, 100);
+}
+
+// 进入全屏浏览模式
+function enterFullscreenBrowsingMode() {
+    const textarea = document.getElementById('content');
+    if (textarea.classList.contains('fullscreen-textarea')) {
+        isFullscreenBrowsingMode = true;
+        textarea.blur(); // 移除焦点
+        console.log('进入全屏浏览模式，isFullscreenBrowsingMode:', isFullscreenBrowsingMode);
+        showNotification('全屏浏览模式 - 使用方向键导航，Esc退出', 'info');
+    }
 }
 
 function getCurrentFontSize() {
@@ -1116,11 +1137,90 @@ function setupKeyboardShortcuts() {
             return;
         }
 
+        // Alt+C 快捷键 - 进入编辑模式（聚焦到内容文本框）
+        if (e.altKey && e.key.toLowerCase() === 'c' && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+            e.preventDefault();
+            enterEditMode();
+            // 如果在全屏浏览模式，切换回编辑模式
+            if (isFullscreenBrowsingMode) {
+                isFullscreenBrowsingMode = false;
+                showNotification('已进入全屏编辑模式 (Alt+C)', 'info');
+            }
+            return;
+        }
+
+        // Esc 快捷键 - 三态切换：全屏编辑 → 全屏浏览 → 退出全屏
         if (e.key === 'Escape') {
             e.preventDefault();
-            toggleFullscreen();
-            showNotification('已退出全屏模式', 'info');
+            const textarea = document.getElementById('content');
+            const isFullscreen = textarea.classList.contains('fullscreen-textarea');
+            const isFocused = document.activeElement === textarea;
+            
+            if (isFullscreen) {
+                if (isFullscreenBrowsingMode) {
+                    // 全屏浏览模式 → 退出全屏
+                    toggleFullscreen();
+                    showNotification('已退出全屏模式', 'info');
+                } else if (isFocused) {
+                    // 全屏编辑模式（有焦点） → 全屏浏览模式
+                    enterFullscreenBrowsingMode();
+                } else {
+                    // 全屏但无焦点 → 退出全屏
+                    toggleFullscreen();
+                    showNotification('已退出全屏模式', 'info');
+                }
+            } else if (isFocused) {
+                // 普通编辑模式 → 退出编辑模式
+                exitEditMode();
+            } else {
+                // 普通浏览模式 → 进入全屏编辑模式
+                toggleFullscreen();
+                showNotification('已进入全屏编辑模式', 'info');
+            }
             return;
+        }
+
+        // 全屏浏览模式下的导航键
+        if (isFullscreenBrowsingMode) {
+            const textarea = document.getElementById('content');
+            console.log('全屏浏览模式导航键:', e.key, 'scrollTop:', textarea.scrollTop);
+            
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                textarea.scrollTop = Math.max(0, textarea.scrollTop - 50);
+                console.log('向上滚动，新scrollTop:', textarea.scrollTop);
+                return;
+            }
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                textarea.scrollTop = Math.min(textarea.scrollHeight - textarea.clientHeight, textarea.scrollTop + 50);
+                return;
+            }
+            
+            if (e.key === 'PageUp') {
+                e.preventDefault();
+                textarea.scrollTop = Math.max(0, textarea.scrollTop - textarea.clientHeight);
+                return;
+            }
+            
+            if (e.key === 'PageDown') {
+                e.preventDefault();
+                textarea.scrollTop = Math.min(textarea.scrollHeight - textarea.clientHeight, textarea.scrollTop + textarea.clientHeight);
+                return;
+            }
+            
+            if (e.key === 'Home') {
+                e.preventDefault();
+                textarea.scrollTop = 0;
+                return;
+            }
+            
+            if (e.key === 'End') {
+                e.preventDefault();
+                textarea.scrollTop = textarea.scrollHeight - textarea.clientHeight;
+                return;
+            }
         }
 
         
@@ -1238,6 +1338,24 @@ function insertDashes() {
     
     // 显示通知
     showNotification('已插入40个"-"符号', 'success');
+}
+
+// 进入编辑模式 - 聚焦到内容文本框
+function enterEditMode() {
+    const textarea = document.getElementById('content');
+    if (textarea) {
+        textarea.focus();
+        showNotification('已进入编辑模式 (Alt+C)', 'info');
+    }
+}
+
+// 退出编辑模式 - 移除焦点到浏览模式
+function exitEditMode() {
+    const textarea = document.getElementById('content');
+    if (textarea) {
+        textarea.blur();
+        showNotification('已退出编辑模式 (Esc)', 'info');
+    }
 }
 
 // 统计块数功能（以3个或更多连续-分隔的块）
