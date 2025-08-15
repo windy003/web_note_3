@@ -1137,14 +1137,14 @@ function setupKeyboardShortcuts() {
             return;
         }
 
-        // Ctrl+C 快捷键 - 进入编辑模式（聚焦到内容文本框）
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c' && !e.altKey && !e.shiftKey) {
+        // Ctrl+Shift+C 快捷键 - 进入编辑模式（聚焦到内容文本框）
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'c' && !e.altKey) {
             e.preventDefault();
             enterEditMode();
             // 如果在全屏浏览模式，切换回编辑模式
             if (isFullscreenBrowsingMode) {
                 isFullscreenBrowsingMode = false;
-                showNotification('已进入全屏编辑模式 (Ctrl+C)', 'info');
+                showNotification('已进入全屏编辑模式 (Ctrl+Shift+C)', 'info');
             }
             return;
         }
@@ -1345,7 +1345,7 @@ function enterEditMode() {
     const textarea = document.getElementById('content');
     if (textarea) {
         textarea.focus();
-        showNotification('已进入编辑模式 (Ctrl+C)', 'info');
+        showNotification('已进入编辑模式 (Ctrl+Shift+C)', 'info');
     }
 }
 
