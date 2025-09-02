@@ -1289,6 +1289,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // 设置键盘快捷键
     setupKeyboardShortcuts();
     
+    // 在笔记35页面自动检测笔记34的状态
+    const currentNoteId = getNoteId();
+    if (currentNoteId === '35') {
+        // 延迟一下让页面完全加载后再检测
+        setTimeout(function() {
+            checkNote34Status();
+        }, 500);
+    }
+    
     // 为文本框添加专门的快捷键监听器
     const textarea = document.getElementById('content');
     if (textarea) {
