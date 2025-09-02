@@ -8,6 +8,13 @@
     <div class="row justify-content-center">
         <div class="col-md-8">
             <h1 class="mb-4">编辑笔记</h1>
+            
+            <!-- 消化中状态提示 -->
+            {% if show_digest_status %}
+            <div class="alert alert-info mb-3" role="alert">
+                <i class="bi bi-clock"></i> 消化中: 一空 (笔记 {{ target_note_id }} 内容为空)
+            </div>
+            {% endif %}
             <form method="POST" id="editForm">
                 <div class="mb-3">
                     <label for="title" class="form-label">标题</label>

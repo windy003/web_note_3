@@ -160,7 +160,22 @@ def edit_note(note_id):
         flash('笔记已更新', 'success')
         return redirect(url_for('view_note', note_id=note.id))
     
-    return render_template('edit.html', note=note)
+    # 检查当前笔记内容是否为空
+    is_content_empty = not note.content or note.content.strip() == ''
+    
+    # 特定功能：在note/35/edit页面检查note/34的内容是否为空
+    show_digest_status = False
+    target_note_id = 34
+    
+    if note_id == 35:  # 只在35号笔记页面显示
+        target_note = Note.query.filter_by(id=target_note_id, user_id=current_user.id).first()
+        if target_note:
+            target_note_empty = not target_note.content or target_note.content.strip() == ''
+            if target_note_empty:
+                show_digest_status = True
+    
+    return render_template('edit.html', note=note, is_content_empty=is_content_empty, 
+                         show_digest_status=show_digest_status, target_note_id=target_note_id)
 
 @app.route('/note/<int:note_id>/delete', methods=['POST'])
 @login_required
