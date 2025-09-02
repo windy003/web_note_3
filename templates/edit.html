@@ -1168,6 +1168,13 @@ function setupKeyboardShortcuts() {
             return;
         }
 
+        // Alt+M 快捷键 - 检测note/34内容是否为空并更新显示
+        if (e.altKey && e.key.toLowerCase() === 'm' && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+            e.preventDefault();
+            checkNote34Status();
+            return;
+        }
+
         // Ctrl+Shift+- 快捷键 - 插入40个-符号
         if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === '-' || e.key === '_' || e.keyCode === 189)) {
             e.preventDefault();
@@ -1531,6 +1538,90 @@ function initDraggable() {
     // 为拖动手柄添加拖动开始事件监听器
     dragHandle.addEventListener('mousedown', startDrag);
     dragHandle.addEventListener('touchstart', startDrag, { passive: false });
+}
+
+// 检测note/34内容是否为空的函数
+function checkNote34Status() {
+    const currentNoteId = getNoteId();
+    
+    // 只在note/35/edit页面执行
+    if (currentNoteId !== '35') {
+        showNotification('此功能仅在笔记35页面可用', 'info');
+        return;
+    }
+    
+    // 发送AJAX请求检测note/34的状态
+    fetch('/api/note/34/status', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('无法访问笔记34');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        // 更新显示状态
+        updateDigestStatusDisplay(data.status, data.is_empty);
+        
+        showNotification(`已检测笔记34状态: ${data.status}`, 'success');
+    })
+    .catch(error => {
+        console.error('检测笔记34状态失败:', error);
+        showNotification('检测笔记34状态失败: ' + error.message, 'error');
+    });
+}
+
+// 更新消化中状态显示
+function updateDigestStatusDisplay(status, isEmpty) {
+    // 更新非全屏模式的显示
+    const normalAlert = document.querySelector('.alert.alert-info');
+    if (normalAlert) {
+        normalAlert.innerHTML = `<i class="bi bi-clock"></i> 消化中：${status} (笔记 34 内容为${isEmpty ? '空' : '非空'})`;
+        normalAlert.style.display = 'block';
+    } else {
+        // 如果没有现有的alert，创建一个
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-info mb-3';
+        alertDiv.setAttribute('role', 'alert');
+        alertDiv.innerHTML = `<i class="bi bi-clock"></i> 消化中：${status} (笔记 34 内容为${isEmpty ? '空' : '非空'})`;
+        
+        const form = document.querySelector('#editForm');
+        if (form) {
+            form.parentNode.insertBefore(alertDiv, form);
+        }
+    }
+    
+    // 更新全屏模式的显示
+    const fullscreenAlert = document.getElementById('fullscreen-digest-status');
+    if (fullscreenAlert) {
+        fullscreenAlert.textContent = status;
+        fullscreenAlert.style.display = 'block';
+    } else {
+        // 如果没有全屏状态显示元素，创建一个
+        const fullscreenControls = document.getElementById('fullscreen-controls');
+        if (fullscreenControls) {
+            const statusDiv = document.createElement('div');
+            statusDiv.id = 'fullscreen-digest-status';
+            statusDiv.className = 'fullscreen-digest-alert';
+            statusDiv.textContent = status;
+            
+            // 插入到控制按钮之前
+            const firstButton = fullscreenControls.querySelector('button');
+            if (firstButton) {
+                fullscreenControls.insertBefore(statusDiv, firstButton);
+            } else {
+                fullscreenControls.appendChild(statusDiv);
+            }
+        }
+    }
 }
 </script>
 {% endblock %} 

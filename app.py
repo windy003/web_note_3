@@ -189,6 +189,25 @@ def delete_note(note_id):
     flash('笔记已删除')
     return redirect(url_for('index'))
 
+@app.route('/api/note/<int:note_id>/status')
+@login_required
+def get_note_status(note_id):
+    """获取笔记内容是否为空的状态"""
+    note = Note.query.filter_by(id=note_id, user_id=current_user.id).first()
+    
+    if not note:
+        return jsonify({'error': '笔记不存在或无权限访问'}), 404
+    
+    is_empty = not note.content or note.content.strip() == ''
+    status = '空' if is_empty else '非空'
+    
+    return jsonify({
+        'id': note.id,
+        'title': note.title,
+        'is_empty': is_empty,
+        'status': status
+    })
+
 @app.route('/create', methods=['GET', 'POST'])
 @login_required
 def create():
