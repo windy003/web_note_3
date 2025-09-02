@@ -1,6 +1,9 @@
 venv/
 __pycache__/
 *.pyc 
+.env
+
+
 
 # 数据库文件
 instance/
