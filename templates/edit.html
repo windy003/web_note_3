@@ -8,6 +8,7 @@
     <div class="row justify-content-center">
         <div class="col-md-8">
             <h1 class="mb-4">编辑笔记</h1>
+            <p style="font-size: 14px;color: #e80707;">快捷键: esc退出全屏, ctrl+s保存,ctrl+shift+- 添加下划线</p>
             
             <!-- 消化中状态提示 -->
             {% if show_digest_status %}
@@ -27,7 +28,7 @@
                             内容
                         </label>
                         <div class="action-buttons-top">
-                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleFullscreen()" title="全屏">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleFullscreen()" title="全屏(快捷键esc)">
                                 <i class="bi bi-fullscreen"></i>
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-secondary" onclick="increaseFontSize()" title="放大字体">
@@ -45,10 +46,10 @@
                             <button type="button" class="btn btn-sm btn-outline-warning" onclick="reverseTextSegments()" title="文本分隔倒置">
                                 <i class="bi bi-arrow-down-up"></i>
                             </button>
-                            <button type="submit" class="btn btn-sm btn-primary" title="保存" style="margin-right: 20px;margin-left: 20px;">
+                            <button type="submit" class="btn btn-sm btn-primary" title="保存(快捷键ctrl+s)" style="margin-right: 20px;margin-left: 20px;">
                                 <i class="bi bi-check-lg"></i>
                             </button>
-                            <button type="button" class="btn btn-sm btn-danger" onclick="confirmDelete()" title="删除">
+                            <button type="button" class="btn btn-sm btn-danger" onclick="confirmDelete()" title="删除(快捷键ctrl+shift+s)">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </div>
