@@ -208,6 +208,21 @@ def get_note_status(note_id):
         'status': status
     })
 
+@app.route('/api/note/<int:note_id>/content')
+@login_required
+def get_note_content(note_id):
+    """获取笔记的完整内容"""
+    note = Note.query.filter_by(id=note_id, user_id=current_user.id).first()
+    
+    if not note:
+        return jsonify({'error': '笔记不存在或无权限访问'}), 404
+    
+    return jsonify({
+        'id': note.id,
+        'title': note.title,
+        'content': note.content or ''
+    })
+
 @app.route('/create', methods=['GET', 'POST'])
 @login_required
 def create():

@@ -730,6 +730,15 @@ function decreaseFontSize() {
 
 // 统计字数和字符数
 function showWordCount() {
+    const currentNoteId = getNoteId();
+    
+    // 如果在笔记34或35页面，显示两个笔记的块数
+    if (currentNoteId === '34' || currentNoteId === '35') {
+        showBothNotesBlockCount();
+        return;
+    }
+    
+    // 其他页面仍然显示当前笔记的详细统计
     const textarea = document.getElementById('content');
     const content = textarea.value;
     
@@ -1162,17 +1171,10 @@ function setupKeyboardShortcuts() {
             return;
         }
 
-        // Ctrl+M 快捷键 - 切换字符数统计面板
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'm' && !e.shiftKey) {
-            e.preventDefault();
-            toggleCharCountPanel();
-            return;
-        }
-
-        // Alt+M 快捷键 - 检测note/34内容是否为空并更新显示
+        // Alt+M 快捷键 - 显示笔记34和35的块数
         if (e.altKey && e.key.toLowerCase() === 'm' && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
             e.preventDefault();
-            checkNote34Status();
+            showBothNotesBlockCount();
             return;
         }
 
@@ -1278,6 +1280,9 @@ function setupKeyboardShortcuts() {
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
+    // 检查是否需要重定向（刷新时的特殊处理）
+    checkForRefreshRedirect();
+    
     // 加载保存的字体大小
     loadFontSize();
     
@@ -1548,6 +1553,211 @@ function initDraggable() {
     // 为拖动手柄添加拖动开始事件监听器
     dragHandle.addEventListener('mousedown', startDrag);
     dragHandle.addEventListener('touchstart', startDrag, { passive: false });
+}
+
+// 检查刷新时显示目标笔记条目数量的函数
+function checkForRefreshRedirect() {
+    const currentNoteId = getNoteId();
+    
+    // 只处理笔记34和35
+    if (currentNoteId !== '34' && currentNoteId !== '35') {
+        return;
+    }
+    
+    // 获取当前页面的完整URL
+    const currentUrl = window.location.href;
+    const urlKey = `lastVisitedUrl_${currentNoteId}`;
+    const lastVisitedUrl = sessionStorage.getItem(urlKey);
+    const visitCountKey = `visitCount_${currentNoteId}`;
+    const visitCount = parseInt(sessionStorage.getItem(visitCountKey) || '0');
+    
+    // 增加访问次数
+    sessionStorage.setItem(visitCountKey, (visitCount + 1).toString());
+    
+    // 如果这是第一次访问或者上次访问的URL和当前URL相同（刷新操作）
+    if (visitCount === 0 || lastVisitedUrl === currentUrl) {
+        // 显示目标笔记的条目数量
+        setTimeout(() => {
+            showTargetNoteItemCount();
+        }, 300); // 延迟300ms确保页面完全加载
+    }
+    
+    // 记录当前访问的URL
+    sessionStorage.setItem(urlKey, currentUrl);
+}
+
+// 显示笔记34和35的块数
+function showBothNotesBlockCount() {
+    const currentNoteId = getNoteId();
+    
+    // 只在笔记34或35页面可用
+    if (currentNoteId !== '34' && currentNoteId !== '35') {
+        showNotification('此功能仅在笔记34或35页面可用', 'info');
+        return;
+    }
+    
+    // 同时获取两个笔记的内容
+    Promise.all([
+        fetch('/api/note/34/content', {
+            method: 'GET',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        }),
+        fetch('/api/note/35/content', {
+            method: 'GET',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+    ])
+    .then(responses => {
+        return Promise.all([
+            responses[0].ok ? responses[0].json() : Promise.reject(`无法访问笔记34`),
+            responses[1].ok ? responses[1].json() : Promise.reject(`无法访问笔记35`)
+        ]);
+    })
+    .then(([note34Data, note35Data]) => {
+        if (note34Data.error) throw new Error(note34Data.error);
+        if (note35Data.error) throw new Error(note35Data.error);
+        
+        // 统计两个笔记的块数
+        const note34BlockCount = countItemsInContent(note34Data.content);
+        const note35BlockCount = countItemsInContent(note35Data.content);
+        
+        // 显示两个笔记的块数
+        showBothNotesBlockCountNotification(note34BlockCount, note35BlockCount);
+    })
+    .catch(error => {
+        console.error('获取笔记内容失败:', error);
+        showNotification('获取笔记内容失败: ' + error.message, 'error');
+    });
+}
+
+// 显示目标笔记条目数量的函数（保留，用于刷新时调用）
+function showTargetNoteItemCount() {
+    // 调用新的显示两个笔记块数的函数
+    showBothNotesBlockCount();
+}
+
+// 统计内容中的条目数量（使用和countBlocks相同的算法）
+function countItemsInContent(content) {
+    // 直接使用现有的countBlocks函数来统计块数
+    return countBlocks(content);
+}
+
+// 显示两个笔记块数的通知
+function showBothNotesBlockCountNotification(note34Count, note35Count) {
+    const message = `笔记34: ${note34Count}个块 | 笔记35: ${note35Count}个块`;
+    
+    // 创建一个更持久的通知显示
+    const existingNotification = document.getElementById('item-count-display');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+    
+    // 创建条目数量显示元素
+    const notification = document.createElement('div');
+    notification.id = 'item-count-display';
+    notification.className = 'alert alert-success';
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10001;
+        background-color: rgba(40, 167, 69, 0.95);
+        color: white;
+        padding: 15px 25px;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        font-size: 16px;
+        font-weight: 600;
+        border: none;
+        min-width: 320px;
+        text-align: center;
+    `;
+    
+    notification.innerHTML = `
+        <i class="bi bi-list-ul" style="margin-right: 8px;"></i>
+        ${message}
+        <button type="button" class="btn-close btn-close-white" 
+                style="position: absolute; top: 8px; right: 8px; font-size: 12px;"
+                onclick="this.parentElement.remove()"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // 7秒后自动消失（比单个笔记显示时间稍长）
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.style.opacity = '0';
+            notification.style.transition = 'opacity 0.3s ease-out';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 300);
+        }
+    }, 7000);
+    
+    // 同时显示常规通知
+    showNotification(message, 'success');
+}
+
+// 显示条目数量通知（保留，但不再使用）
+function showItemCountNotification(noteId, itemCount) {
+    const message = `笔记 ${noteId} 共有 ${itemCount} 个块`;
+    
+    // 创建一个更持久的通知显示
+    const existingNotification = document.getElementById('item-count-display');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+    
+    // 创建条目数量显示元素
+    const notification = document.createElement('div');
+    notification.id = 'item-count-display';
+    notification.className = 'alert alert-success';
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10001;
+        background-color: rgba(40, 167, 69, 0.95);
+        color: white;
+        padding: 15px 25px;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        font-size: 16px;
+        font-weight: 600;
+        border: none;
+        min-width: 250px;
+        text-align: center;
+    `;
+    
+    notification.innerHTML = `
+        <i class="bi bi-list-ul" style="margin-right: 8px;"></i>
+        ${message}
+        <button type="button" class="btn-close btn-close-white" 
+                style="position: absolute; top: 8px; right: 8px; font-size: 12px;"
+                onclick="this.parentElement.remove()"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // 5秒后自动消失
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.style.opacity = '0';
+            notification.style.transition = 'opacity 0.3s ease-out';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 300);
+        }
+    }, 5000);
+    
+    // 同时显示常规通知
+    showNotification(message, 'success');
 }
 
 // 检测note/34内容是否为空的函数
