@@ -10,12 +10,6 @@
             <h1 class="mb-4">编辑笔记</h1>
             <p style="font-size: 14px;color: #e80707;">快捷键: esc退出全屏, ctrl+s保存,ctrl+shift+- 添加下划线</p>
             
-            <!-- 消化中状态提示 -->
-            {% if show_digest_status %}
-            <div class="alert alert-info mb-3" role="alert">
-                <i class="bi bi-clock"></i> 消化中：空 (笔记 {{ target_note_id }} 内容为空)
-            </div>
-            {% endif %}
             <form method="POST" id="editForm">
                 <div class="mb-3">
                     <label for="title" class="form-label">标题</label>
@@ -61,13 +55,6 @@
                         <div id="drag-handle" class="drag-handle">
                             <i class="bi bi-grip-vertical"></i>
                         </div>
-                        
-                        <!-- 全屏模式下的消化中状态提示 -->
-                        {% if show_digest_status %}
-                        <div id="fullscreen-digest-status" class="fullscreen-digest-alert">
-                            空
-                        </div>
-                        {% endif %}
                         
                         <button type="button" class="btn btn-sm btn-light control-btn" onclick="toggleFullscreen()">
                             <i class="bi bi-fullscreen-exit"></i>
@@ -389,24 +376,6 @@
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
 }
 
-/* 全屏模式下的消化中状态提示 */
-.fullscreen-digest-alert {
-    background-color: rgba(23, 162, 184, 0.95);
-    color: white;
-    padding: 8px 12px;
-    border-radius: 15px;
-    font-size: 12px;
-    font-weight: 500;
-    margin: 5px 0;
-    text-align: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    white-space: nowrap;
-}
-
-.fullscreen-digest-alert i {
-    margin-right: 4px;
-    font-size: 10px;
-}
 
 /* 移动设备适配 */
 @media (max-width: 768px) {
@@ -415,11 +384,6 @@
         right: 10px;
         left: 10px;
         width: auto;
-    }
-    
-    .fullscreen-digest-alert {
-        font-size: 11px;
-        padding: 6px 8px;
     }
 }
 
@@ -1295,14 +1259,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // 设置键盘快捷键
     setupKeyboardShortcuts();
     
-    // 在笔记35页面自动检测笔记34的状态
-    const currentNoteId = getNoteId();
-    if (currentNoteId === '35') {
-        // 延迟一下让页面完全加载后再检测
-        setTimeout(function() {
-            checkNote34Status();
-        }, 500);
-    }
     
     // 为文本框添加专门的快捷键监听器
     const textarea = document.getElementById('content');
@@ -1760,88 +1716,6 @@ function showItemCountNotification(noteId, itemCount) {
     showNotification(message, 'success');
 }
 
-// 检测note/34内容是否为空的函数
-function checkNote34Status() {
-    const currentNoteId = getNoteId();
-    
-    // 只在note/35/edit页面执行
-    if (currentNoteId !== '35') {
-        showNotification('此功能仅在笔记35页面可用', 'info');
-        return;
-    }
-    
-    // 发送AJAX请求检测note/34的状态
-    fetch('/api/note/34/status', {
-        method: 'GET',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('无法访问笔记34');
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.error) {
-            throw new Error(data.error);
-        }
-        
-        // 更新显示状态
-        updateDigestStatusDisplay(data.status, data.is_empty);
-        
-        showNotification(`已检测笔记34状态: ${data.status}`, 'success');
-    })
-    .catch(error => {
-        console.error('检测笔记34状态失败:', error);
-        showNotification('检测笔记34状态失败: ' + error.message, 'error');
-    });
-}
 
-// 更新消化中状态显示
-function updateDigestStatusDisplay(status, isEmpty) {
-    // 更新非全屏模式的显示
-    const normalAlert = document.querySelector('.alert.alert-info');
-    if (normalAlert) {
-        normalAlert.innerHTML = `<i class="bi bi-clock"></i> 消化中：${status} (笔记 34 内容为${isEmpty ? '空' : '非空'})`;
-        normalAlert.style.display = 'block';
-    } else {
-        // 如果没有现有的alert，创建一个
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-info mb-3';
-        alertDiv.setAttribute('role', 'alert');
-        alertDiv.innerHTML = `<i class="bi bi-clock"></i> 消化中：${status} (笔记 34 内容为${isEmpty ? '空' : '非空'})`;
-        
-        const form = document.querySelector('#editForm');
-        if (form) {
-            form.parentNode.insertBefore(alertDiv, form);
-        }
-    }
-    
-    // 更新全屏模式的显示
-    const fullscreenAlert = document.getElementById('fullscreen-digest-status');
-    if (fullscreenAlert) {
-        fullscreenAlert.textContent = status;
-        fullscreenAlert.style.display = 'block';
-    } else {
-        // 如果没有全屏状态显示元素，创建一个
-        const fullscreenControls = document.getElementById('fullscreen-controls');
-        if (fullscreenControls) {
-            const statusDiv = document.createElement('div');
-            statusDiv.id = 'fullscreen-digest-status';
-            statusDiv.className = 'fullscreen-digest-alert';
-            statusDiv.textContent = status;
-            
-            // 插入到控制按钮之前
-            const firstButton = fullscreenControls.querySelector('button');
-            if (firstButton) {
-                fullscreenControls.insertBefore(statusDiv, firstButton);
-            } else {
-                fullscreenControls.appendChild(statusDiv);
-            }
-        }
-    }
-}
 </script>
 {% endblock %} 
