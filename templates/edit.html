@@ -1142,6 +1142,13 @@ function setupKeyboardShortcuts() {
             return;
         }
 
+        // Ctrl+M 快捷键 - 显示笔记34和35的块数
+        if (e.ctrlKey && e.key.toLowerCase() === 'm' && !e.altKey && !e.metaKey && !e.shiftKey) {
+            e.preventDefault();
+            showBothNotesBlockCount();
+            return;
+        }
+
         // Ctrl+Shift+- 快捷键 - 插入40个-符号
         if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === '-' || e.key === '_' || e.keyCode === 189)) {
             e.preventDefault();
