@@ -575,20 +575,33 @@ function loadCodeModeState() {
 }
 
 // 5. 定义保存函数
-function saveNote(message = '正在保存...') {
-    
+function saveNote(message = '正在保存...', forceSync = false) {
+
     // 获取笔记ID
     const noteId = getNoteId();
-    
-    
-    
+
+    // 如果不是强行同步，先检查冲突
+    if (!forceSync && (noteId === '34' || noteId === '35')) {
+        checkSaveConflict(noteId, () => {
+            // 没有冲突，正常保存
+            performSave(message);
+        });
+        return;
+    }
+
+    // 强行同步或非34/35页面，直接保存
+    performSave(message);
+}
+
+// 执行实际保存操作
+function performSave(message = '正在保存...') {
     // 显示保存中提示
     showNotification(message, 'info');
-    
+
     // 获取表单数据
     const form = document.getElementById('editForm');
     const formData = new FormData(form);
-    
+
     // 使用 AJAX 提交表单
     fetch(form.action, {
         method: 'POST',
@@ -614,6 +627,174 @@ function saveNote(message = '正在保存...') {
         console.error('保存出错:', error);
         showNotification('保存出错: ' + error.message, 'error');
     });
+}
+
+// 检查保存冲突
+function checkSaveConflict(noteId, onNoConflict) {
+    const currentContent = document.getElementById('content').value;
+
+    // 获取服务器上的最新内容
+    fetch(`/api/note/${noteId}/content`, {
+        method: 'GET',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('无法获取服务器内容');
+        }
+        return response.json();
+    })
+    .then(serverData => {
+        if (serverData.error) {
+            throw new Error(serverData.error);
+        }
+
+        const serverContent = serverData.content || '';
+        const hasConflict = checkContentConflict(noteId, currentContent, serverContent);
+
+        if (hasConflict) {
+            showConflictWarning(noteId, currentContent, serverContent);
+        } else {
+            onNoConflict();
+        }
+    })
+    .catch(error => {
+        console.error('检查冲突失败:', error);
+        showNotification('检查冲突失败，将强行保存: ' + error.message, 'error');
+        performSave('检查冲突失败，强行保存...');
+    });
+}
+
+// 检查内容冲突逻辑
+function checkContentConflict(noteId, currentContent, serverContent) {
+    // 空内容不检查冲突
+    if (!currentContent.trim()) {
+        return false;
+    }
+
+    // 清除所有空格和换行符，只保留有效字符进行比较
+    function cleanContent(content) {
+        return content.replace(/[\s\n\r\t]/g, '');
+    }
+
+    const cleanCurrentContent = cleanContent(currentContent);
+    const cleanServerContent = cleanContent(serverContent);
+
+    if (noteId === '35') {
+        // 页面35：如果要提交的内容不包括服务器上的内容，就有冲突
+        // 但如果服务器内容为空，则不检查冲突
+        if (!cleanServerContent) {
+            return false;
+        }
+        return !cleanCurrentContent.includes(cleanServerContent);
+    } else if (noteId === '34') {
+        // 页面34：如果服务器的内容不包括要提交的内容，就有冲突
+        return !cleanServerContent.includes(cleanCurrentContent);
+    }
+
+    return false;
+}
+
+// 显示冲突警告弹框
+function showConflictWarning(noteId, currentContent, serverContent) {
+    // 移除已存在的警告框
+    const existingWarning = document.getElementById('conflictWarningModal');
+    if (existingWarning) {
+        existingWarning.remove();
+    }
+
+    // 创建警告弹框
+    const modal = document.createElement('div');
+    modal.id = 'conflictWarningModal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 10002;
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        min-width: 400px;
+        max-width: 600px;
+        border: 2px solid #dc3545;
+    `;
+
+    const warningMessage = noteId === '35'
+        ? '警告：当前内容可能不是最新的！您的内容没有包含服务器上的最新内容。'
+        : '警告：当前内容可能不是最新的！服务器上没有包含您要保存的内容。';
+
+    modal.innerHTML = `
+        <div style="text-align: center;">
+            <h5 style="margin-bottom: 20px; color: #dc3545; font-weight: 600;">
+                <i class="bi bi-exclamation-triangle" style="margin-right: 8px; font-size: 1.2em;"></i>
+                保存冲突警告
+            </h5>
+            <div style="text-align: left; margin-bottom: 20px; color: #333; line-height: 1.5;">
+                <p style="margin-bottom: 15px;">${warningMessage}</p>
+                <p style="margin-bottom: 0; color: #666; font-size: 14px;">
+                    这可能会导致数据丢失。建议先检查内容差异，或者点击"强行保存同步"覆盖服务器内容。
+                </p>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="closeConflictWarning()" style="
+                    background-color: #6c757d;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 14px;
+                ">取消</button>
+                <button onclick="forceSaveSync()" style="
+                    background-color: #dc3545;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    font-weight: 600;
+                ">强行保存同步</button>
+            </div>
+        </div>
+    `;
+
+    // 创建背景遮罩
+    const overlay = document.createElement('div');
+    overlay.id = 'conflictWarningOverlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        z-index: 10001;
+    `;
+
+    // 点击遮罩关闭警告框
+    overlay.onclick = closeConflictWarning;
+
+    // 添加到页面
+    document.body.appendChild(overlay);
+    document.body.appendChild(modal);
+}
+
+// 关闭冲突警告弹框
+function closeConflictWarning() {
+    const modal = document.getElementById('conflictWarningModal');
+    const overlay = document.getElementById('conflictWarningOverlay');
+
+    if (modal) modal.remove();
+    if (overlay) overlay.remove();
+}
+
+// 强行保存同步
+function forceSaveSync() {
+    closeConflictWarning();
+    performSave('强行保存同步中...');
 }
 
 // 6. 定义全屏相关函数
@@ -1253,18 +1434,27 @@ function setupKeyboardShortcuts() {
 document.addEventListener('DOMContentLoaded', function() {
     // 检查是否需要重定向（刷新时的特殊处理）
     checkForRefreshRedirect();
-    
+
     // 加载保存的字体大小
     loadFontSize();
-    
+
     // 加载保存的代码模式状态
     loadCodeModeState();
-    
+
     // 加载字符数面板状态
     loadCharCountPanelState();
-    
+
     // 设置键盘快捷键
     setupKeyboardShortcuts();
+
+    // 拦截表单提交，使用我们的保存逻辑
+    const form = document.getElementById('editForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault(); // 阻止默认表单提交
+            saveNote('正在保存...');
+        });
+    }
     
     
     // 为文本框添加专门的快捷键监听器
