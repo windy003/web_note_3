@@ -23,11 +23,11 @@ logging.basicConfig(
 )
 
 # 源文件路径
-source_path = r"D:\files\using\web_note_3\instance\notes.db"
+source_path = r"D:\files\using\Web\web_note_3\instance\notes.db"
 
     
 # 目标路径
-destination_path = 'gdrive:/sync/x13y-gen2/web_note3/instance/'
+destination_path = 'gdrive:/sync/x1c-gen8/web_note3/instance/'
 
 def sync_clipboard_to_gdrive():
     """
