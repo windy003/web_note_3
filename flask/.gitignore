@@ -1,0 +1,22 @@
+venv/
+__pycache__/
+*.pyc 
+.env
+.vscode/
+.claude
+.vscode/
+.claude/
+
+
+# 数据库文件
+instance/
+*.db
+notes.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+
+
