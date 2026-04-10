@@ -7,7 +7,8 @@
       "Bash(python -c \"import django; print\\('Django version:', django.__version__\\)\")",
       "Bash(python manage.py check)",
       "Bash(python manage.py makemigrations notes)",
-      "Bash(python manage.py migrate)"
+      "Bash(python manage.py migrate)",
+      "Bash(python:*)"
     ]
   }
 }
