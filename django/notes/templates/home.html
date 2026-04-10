@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+    .note-card {
+        transition: transform 0.2s;
+    }
+    .note-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% if user.is_authenticated %}
+    <div class="container mt-3">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="mb-4">我的笔记</h1>
+                <div class="mb-4">
+                    <a href="{% url 'note_create' %}" class="btn btn-primary">新建笔记</a>
+                </div>
+                {% if notes %}
+                    <div class="row">
+                        {% for note in notes %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100 note-card">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        {% if note.title == '待做' or note.title == '待记忆' %}
+                                            <span style="color: #fd0707;">{{ note.title }}</span>
+                                        {% else %}
+                                            {{ note.title }}
+                                        {% endif %}
+                                    </h5>
+                                    <p class="card-text">
+                                        {% if not note.content %}
+                                            <span style="color: #fd0707;">空</span>
+                                        {% endif %}
+                                    </p>
+                                    <p class="card-text text-muted">
+                                        {% if note.updated_at %}
+                                            更新于: <span>{{ note.updated_at|date:"Y-m-d H:i:s" }}</span>
+                                        {% else %}
+                                            创建于: <span>{{ note.created_at|date:"Y-m-d H:i:s" }}</span>
+                                        {% endif %}
+                                    </p>
+                                    <a href="{% url 'note_edit' note.id %}" class="btn btn-outline-primary">编辑笔记</a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        还没有笔记，开始创建你的第一个笔记吧！
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8 text-center">
+                <h1 class="mb-4">欢迎使用笔记应用</h1>
+                <p class="lead mb-4">一个简单好用的在线笔记工具，随时记录你的想法。</p>
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="{% url 'login' %}" class="btn btn-primary btn-lg">登录</a>
+                    <a href="{% url 'register' %}" class="btn btn-outline-secondary btn-lg">注册</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

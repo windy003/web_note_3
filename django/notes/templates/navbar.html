@@ -1,0 +1,70 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        {% if user.is_authenticated %}
+            <div class="dropdown">
+                <a class="navbar-brand dropdown-toggle" href="#" id="notesDropdown" role="button"
+                   data-bs-toggle="dropdown" aria-expanded="false">
+                    笔记列表
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="notesDropdown" id="navNotesDropdown">
+                    <li><span class="dropdown-item text-muted">加载中...</span></li>
+                </ul>
+            </div>
+
+            <!-- 移动端按钮 -->
+            <div class="d-flex d-lg-none">
+                <a href="{% url 'home' %}" class="btn btn-sm btn-outline-light me-2">所有笔记</a>
+                <a href="{% url 'note_create' %}" class="btn btn-sm btn-outline-light me-2">新建笔记</a>
+                <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-light">退出</a>
+            </div>
+
+            <!-- 大屏幕导航 -->
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">所有笔记</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'note_create' %}">新建笔记</a></li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a href="{% url 'logout' %}" class="btn btn-link nav-link">退出</a>
+                    </li>
+                </ul>
+            </div>
+        {% else %}
+            <a class="navbar-brand" href="{% url 'home' %}">笔记应用</a>
+            <div class="d-flex d-lg-none">
+                <a href="{% url 'login' %}" class="btn btn-sm btn-outline-light me-2">登录</a>
+                <a href="{% url 'register' %}" class="btn btn-sm btn-outline-light">注册</a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">登录</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'register' %}">注册</a></li>
+                </ul>
+            </div>
+        {% endif %}
+    </div>
+</nav>
+
+{% if user.is_authenticated %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('/api/notes/')
+        .then(r => r.json())
+        .then(data => {
+            const dropdown = document.getElementById('navNotesDropdown');
+            if (!Array.isArray(data) || data.length === 0) {
+                dropdown.innerHTML = '<li><span class="dropdown-item text-muted">暂无笔记</span></li>';
+                return;
+            }
+            dropdown.innerHTML = data.slice(0, 20).map(note =>
+                '<li><a class="dropdown-item" href="/notes/' + note.id + '/edit/">' +
+                (note.title || '') +
+                (!note.content ? '<span style="color:#fd0707"> 空</span>' : '') +
+                '</a></li>'
+            ).join('');
+        })
+        .catch(() => {});
+});
+</script>
+{% endif %}

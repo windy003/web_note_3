@@ -3,7 +3,11 @@
     "allow": [
       "Bash(npm install:*)",
       "Bash(curl -s http://localhost:3000/api/auth/session)",
-      "Bash(python -c \"import ast; ast.parse\\(open\\('app.py', encoding='utf-8'\\).read\\(\\)\\); print\\('OK'\\)\")"
+      "Bash(python -c \"import ast; ast.parse\\(open\\('app.py', encoding='utf-8'\\).read\\(\\)\\); print\\('OK'\\)\")",
+      "Bash(python -c \"import django; print\\('Django version:', django.__version__\\)\")",
+      "Bash(python manage.py check)",
+      "Bash(python manage.py makemigrations notes)",
+      "Bash(python manage.py migrate)"
     ]
   }
 }

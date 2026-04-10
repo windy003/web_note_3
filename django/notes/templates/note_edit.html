@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-3">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h1 class="mb-4">编辑笔记</h1>
+            <div class="mb-3">
+                <label for="title" class="form-label">标题</label>
+                <input type="text" class="form-control" id="title"
+                       value="{{ note.title }}" required
+                       style="font-size: 20px; padding: 12px 15px;">
+            </div>
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label for="content" class="form-label mb-0">内容</label>
+                    <div>
+                        <button onclick="saveNote()" class="btn btn-sm btn-primary me-2" id="saveBtn">保存</button>
+                        <button onclick="deleteNote()" class="btn btn-sm btn-danger">删除</button>
+                    </div>
+                </div>
+                <textarea class="form-control" id="content" rows="25"
+                          style="font-size: 22px; line-height: 1.8; padding: 20px; white-space: pre-wrap;">{{ note.content }}</textarea>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 保存成功提示 -->
+<div id="flashMessage" style="
+    position: fixed; bottom: 20px; right: 20px; padding: 10px 20px;
+    border-radius: 4px; z-index: 10000; background-color: rgba(40,167,69,0.9);
+    color: white; box-shadow: 0 2px 10px rgba(0,0,0,0.2); display: none;
+"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const noteId = {{ note.id }};
+    const csrfToken = '{{ csrf_token }}';
+
+    function showMessage(text) {
+        const el = document.getElementById('flashMessage');
+        el.textContent = text;
+        el.style.display = 'block';
+        setTimeout(() => { el.style.display = 'none'; }, 2000);
+    }
+
+    async function saveNote() {
+        const title = document.getElementById('title').value;
+        const content = document.getElementById('content').value;
+        const btn = document.getElementById('saveBtn');
+        btn.textContent = '保存中...';
+        btn.disabled = true;
+
+        try {
+            const res = await fetch('/api/notes/' + noteId + '/update/', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                },
+                body: JSON.stringify({ title, content }),
+            });
+            const data = await res.json();
+            showMessage(data.success ? '保存成功' : '保存失败');
+        } catch (e) {
+            showMessage('保存失败');
+        }
+        btn.textContent = '保存';
+        btn.disabled = false;
+    }
+
+    async function deleteNote() {
+        if (!confirm('确定要删除这个笔记吗？')) return;
+        try {
+            await fetch('/api/notes/' + noteId + '/delete/', {
+                method: 'DELETE',
+                headers: { 'X-CSRFToken': csrfToken },
+            });
+            window.location.href = '/';
+        } catch (e) {
+            showMessage('删除失败');
+        }
+    }
+
+    // Ctrl+S 快捷键保存
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            saveNote();
+        }
+    });
+</script>
+{% endblock %}
