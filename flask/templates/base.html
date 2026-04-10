@@ -42,9 +42,10 @@
             </div>
             
             <!-- 移动端直接显示的按钮 -->
-            <div class="d-flex d-lg-none">
+            <div class="d-flex d-lg-none flex-wrap">
                 <a href="{{ url_for('index') }}" class="btn btn-sm btn-outline-light me-2">所有笔记</a>
                 <a href="{{ url_for('create') }}" class="btn btn-sm btn-outline-light me-2">新建笔记</a>
+                <a href="{{ url_for('search') }}" class="btn btn-sm btn-outline-light me-2">搜索</a>
                 <form action="{{ url_for('logout') }}" method="POST" class="d-inline">
                     <button type="submit" class="btn btn-sm btn-outline-light">退出</button>
                 </form>
@@ -64,6 +65,12 @@
                     </li>
                     {% endif %}
                 </ul>
+                {% if current_user.is_authenticated %}
+                <form class="d-flex me-2" action="{{ url_for('search') }}" method="get" role="search">
+                    <input class="form-control form-control-sm me-2" type="search" name="q" placeholder="搜索所有笔记..." aria-label="搜索" value="{{ request.args.get('q', '') }}">
+                    <button class="btn btn-sm btn-outline-light" type="submit">搜索</button>
+                </form>
+                {% endif %}
                 <ul class="navbar-nav">
                     {% if current_user.is_authenticated %}
                     <li class="nav-item">

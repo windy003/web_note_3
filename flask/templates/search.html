@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}搜索笔记{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">搜索笔记</h1>
+
+            <form class="mb-4" action="{{ url_for('search') }}" method="get" role="search">
+                <div class="input-group">
+                    <input class="form-control" type="search" name="q" placeholder="输入关键词搜索所有笔记的标题和内容..." value="{{ query }}" autofocus>
+                    <button class="btn btn-primary" type="submit">搜索</button>
+                </div>
+            </form>
+
+            {% if query %}
+                {% if results %}
+                    <p class="text-muted">找到 {{ results|length }} 条包含 "<strong>{{ query }}</strong>" 的笔记</p>
+                    <div class="list-group">
+                        {% for note in results %}
+                        <a href="{{ url_for('edit_note', note_id=note.id) }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">
+                                    {% if note.title %}
+                                        {{ note.title|replace(query, '<mark>' + query + '</mark>')|safe }}
+                                    {% else %}
+                                        <span class="text-muted">无标题</span>
+                                    {% endif %}
+                                </h5>
+                                <small class="text-muted">{{ note.updated_at|format_datetime }}</small>
+                            </div>
+                            {% if snippets.get(note.id) %}
+                            <p class="mb-1 text-muted">
+                                {{ snippets[note.id]|replace(query, '<mark>' + query + '</mark>')|safe }}
+                            </p>
+                            {% endif %}
+                        </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning">
+                        没有找到包含 "<strong>{{ query }}</strong>" 的笔记
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info">
+                    请输入关键词来搜索你的所有笔记
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+mark {
+    background-color: #fff3cd;
+    padding: 0 2px;
+    border-radius: 2px;
+}
+.list-group-item:hover {
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}

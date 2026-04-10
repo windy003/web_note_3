@@ -193,6 +193,40 @@ def get_note_content(note_id):
         'content': note.content or ''
     })
 
+@app.route('/search')
+@login_required
+def search():
+    query = request.args.get('q', '', type=str).strip()
+    results = []
+    if query:
+        like_pattern = f"%{query}%"
+        results = Note.query.filter(
+            Note.user_id == current_user.id,
+            db.or_(
+                Note.title.ilike(like_pattern),
+                Note.content.ilike(like_pattern)
+            )
+        ).order_by(Note.updated_at.desc()).all()
+
+    # 为每个结果生成内容摘要（显示匹配上下文）
+    snippets = {}
+    if query:
+        q_lower = query.lower()
+        for note in results:
+            content = note.content or ''
+            idx = content.lower().find(q_lower)
+            if idx == -1:
+                snippets[note.id] = ''
+                continue
+            start = max(0, idx - 40)
+            end = min(len(content), idx + len(query) + 80)
+            prefix = '...' if start > 0 else ''
+            suffix = '...' if end < len(content) else ''
+            snippets[note.id] = prefix + content[start:end] + suffix
+
+    return render_template('search.html', query=query, results=results, snippets=snippets)
+
+
 @app.route('/create', methods=['GET', 'POST'])
 @login_required
 def create():
