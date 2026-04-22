@@ -208,23 +208,49 @@ def search():
             )
         ).order_by(Note.updated_at.desc()).all()
 
-    # 为每个结果生成内容摘要（显示匹配上下文）
-    snippets = {}
+    # 为每个结果生成所有匹配位置的上下文摘要
+    match_data = {}
     if query:
         q_lower = query.lower()
         for note in results:
             content = note.content or ''
-            idx = content.lower().find(q_lower)
-            if idx == -1:
-                snippets[note.id] = ''
-                continue
-            start = max(0, idx - 40)
-            end = min(len(content), idx + len(query) + 80)
-            prefix = '...' if start > 0 else ''
-            suffix = '...' if end < len(content) else ''
-            snippets[note.id] = prefix + content[start:end] + suffix
+            content_lower = content.lower()
+            # 找到所有匹配位置
+            positions = []
+            start_search = 0
+            while True:
+                idx = content_lower.find(q_lower, start_search)
+                if idx == -1:
+                    break
+                positions.append(idx)
+                start_search = idx + 1
+            # 同时统计标题中的匹配数
+            title = note.title or ''
+            title_lower = title.lower()
+            title_count = 0
+            start_search = 0
+            while True:
+                idx = title_lower.find(q_lower, start_search)
+                if idx == -1:
+                    break
+                title_count += 1
+                start_search = idx + 1
+            # 生成每个匹配位置的上下文片段
+            snippets_list = []
+            for idx in positions:
+                ctx_start = max(0, idx - 40)
+                ctx_end = min(len(content), idx + len(query) + 80)
+                prefix = '...' if ctx_start > 0 else ''
+                suffix = '...' if ctx_end < len(content) else ''
+                snippets_list.append(prefix + content[ctx_start:ctx_end] + suffix)
+            match_data[note.id] = {
+                'content_count': len(positions),
+                'title_count': title_count,
+                'total_count': len(positions) + title_count,
+                'snippets': snippets_list,
+            }
 
-    return render_template('search.html', query=query, results=results, snippets=snippets)
+    return render_template('search.html', query=query, results=results, match_data=match_data)
 
 
 @app.route('/create', methods=['GET', 'POST'])

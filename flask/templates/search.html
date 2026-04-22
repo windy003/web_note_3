@@ -20,23 +20,41 @@
                     <p class="text-muted">找到 {{ results|length }} 条包含 "<strong>{{ query }}</strong>" 的笔记</p>
                     <div class="list-group">
                         {% for note in results %}
-                        <a href="{{ url_for('edit_note', note_id=note.id) }}" class="list-group-item list-group-item-action">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h5 class="mb-1">
-                                    {% if note.title %}
-                                        {{ note.title|replace(query, '<mark>' + query + '</mark>')|safe }}
-                                    {% else %}
-                                        <span class="text-muted">无标题</span>
-                                    {% endif %}
-                                </h5>
-                                <small class="text-muted">{{ note.updated_at|format_datetime }}</small>
+                        {% set data = match_data.get(note.id, {}) %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between align-items-start">
+                                <div>
+                                    <a href="{{ url_for('edit_note', note_id=note.id) }}" class="text-decoration-none">
+                                        <h5 class="mb-1">
+                                            {% if note.title %}
+                                                {{ note.title|replace(query, '<mark>' + query + '</mark>')|safe }}
+                                            {% else %}
+                                                <span class="text-muted">无标题</span>
+                                            {% endif %}
+                                        </h5>
+                                    </a>
+                                </div>
+                                <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                                    <span class="badge bg-info" title="关键字出现次数">{{ data.get('total_count', 0) }} 次匹配</span>
+                                    <small class="text-muted">{{ note.updated_at|format_datetime }}</small>
+                                </div>
                             </div>
-                            {% if snippets.get(note.id) %}
-                            <p class="mb-1 text-muted">
-                                {{ snippets[note.id]|replace(query, '<mark>' + query + '</mark>')|safe }}
-                            </p>
+
+                            {% if data.get('snippets') %}
+                            <div class="snippet-nav mt-2" data-note-id="{{ note.id }}">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary nav-btn nav-prev" title="上一个匹配" onclick="navSnippet({{ note.id }}, -1)">&#9650;</button>
+                                    <span class="snippet-counter text-muted" id="counter-{{ note.id }}">1 / {{ data.get('content_count', 0) }}</span>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary nav-btn nav-next" title="下一个匹配" onclick="navSnippet({{ note.id }}, 1)">&#9660;</button>
+                                </div>
+                                {% for snippet in data.get('snippets', []) %}
+                                <p class="mb-0 text-muted snippet-text" data-note-id="{{ note.id }}" data-index="{{ loop.index0 }}" style="{% if not loop.first %}display:none;{% endif %}">
+                                    {{ snippet|replace(query, '<mark>' + query + '</mark>')|safe }}
+                                </p>
+                                {% endfor %}
+                            </div>
                             {% endif %}
-                        </a>
+                        </div>
                         {% endfor %}
                     </div>
                 {% else %}
@@ -62,5 +80,57 @@ mark {
 .list-group-item:hover {
     background-color: #f8f9fa;
 }
+.nav-btn {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    line-height: 1;
+}
+.snippet-counter {
+    font-size: 0.85em;
+    min-width: 50px;
+    text-align: center;
+}
+.snippet-text {
+    font-size: 0.9em;
+    word-break: break-all;
+}
+.badge.bg-info {
+    font-size: 0.8em;
+}
 </style>
+
+<script>
+// 记录每个笔记当前显示的snippet索引
+var currentIndex = {};
+
+function navSnippet(noteId, direction) {
+    var snippets = document.querySelectorAll('.snippet-text[data-note-id="' + noteId + '"]');
+    if (snippets.length === 0) return;
+
+    // 初始化索引
+    if (!(noteId in currentIndex)) {
+        currentIndex[noteId] = 0;
+    }
+
+    // 隐藏当前
+    snippets[currentIndex[noteId]].style.display = 'none';
+
+    // 计算新索引（循环）
+    currentIndex[noteId] = (currentIndex[noteId] + direction + snippets.length) % snippets.length;
+
+    // 显示新的
+    snippets[currentIndex[noteId]].style.display = '';
+
+    // 更新计数器
+    var counter = document.getElementById('counter-' + noteId);
+    if (counter) {
+        counter.textContent = (currentIndex[noteId] + 1) + ' / ' + snippets.length;
+    }
+}
+</script>
 {% endblock %}
