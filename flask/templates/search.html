@@ -8,65 +8,14 @@
         <div class="col-12">
             <h1 class="mb-4">搜索笔记</h1>
 
-            <form class="mb-4" action="{{ url_for('search') }}" method="get" role="search">
+            <div class="mb-4">
                 <div class="input-group">
-                    <input class="form-control" type="search" name="q" placeholder="输入关键词搜索所有笔记的标题和内容..." value="{{ query }}" autofocus>
-                    <button class="btn btn-primary" type="submit">搜索</button>
+                    <input class="form-control" type="search" id="search-input" placeholder="输入关键词搜索所有笔记的标题和内容..." value="{{ query }}" autofocus>
                 </div>
-            </form>
+            </div>
 
-            {% if query %}
-                {% if results %}
-                    <p class="text-muted">找到 {{ results|length }} 条包含 "<strong>{{ query }}</strong>" 的笔记</p>
-                    <div class="list-group">
-                        {% for note in results %}
-                        {% set data = match_data.get(note.id, {}) %}
-                        <div class="list-group-item">
-                            <div class="d-flex w-100 justify-content-between align-items-start">
-                                <div>
-                                    <a href="{{ url_for('edit_note', note_id=note.id) }}" class="text-decoration-none">
-                                        <h5 class="mb-1">
-                                            {% if note.title %}
-                                                {{ note.title|replace(query, '<mark>' + query + '</mark>')|safe }}
-                                            {% else %}
-                                                <span class="text-muted">无标题</span>
-                                            {% endif %}
-                                        </h5>
-                                    </a>
-                                </div>
-                                <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                                    <span class="badge bg-info" title="关键字出现次数">{{ data.get('total_count', 0) }} 次匹配</span>
-                                    <small class="text-muted">{{ note.updated_at|format_datetime }}</small>
-                                </div>
-                            </div>
-
-                            {% if data.get('snippets') %}
-                            <div class="snippet-nav mt-2" data-note-id="{{ note.id }}">
-                                <div class="d-flex align-items-center gap-2 mb-1">
-                                    <button type="button" class="btn btn-sm btn-outline-secondary nav-btn nav-prev" title="上一个匹配" onclick="navSnippet({{ note.id }}, -1)">&#9650;</button>
-                                    <span class="snippet-counter text-muted" id="counter-{{ note.id }}">1 / {{ data.get('content_count', 0) }}</span>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary nav-btn nav-next" title="下一个匹配" onclick="navSnippet({{ note.id }}, 1)">&#9660;</button>
-                                </div>
-                                {% for snippet in data.get('snippets', []) %}
-                                <p class="mb-0 text-muted snippet-text" data-note-id="{{ note.id }}" data-index="{{ loop.index0 }}" style="{% if not loop.first %}display:none;{% endif %}">
-                                    {{ snippet|replace(query, '<mark>' + query + '</mark>')|safe }}
-                                </p>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                        </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="alert alert-warning">
-                        没有找到包含 "<strong>{{ query }}</strong>" 的笔记
-                    </div>
-                {% endif %}
-            {% else %}
-                <div class="alert alert-info">
-                    请输入关键词来搜索你的所有笔记
-                </div>
-            {% endif %}
+            <div id="search-status"></div>
+            <div id="search-results"></div>
         </div>
     </div>
 </div>
@@ -102,35 +51,142 @@ mark {
 .badge.bg-info {
     font-size: 0.8em;
 }
+.search-result-item {
+    cursor: pointer;
+}
 </style>
 
 <script>
-// 记录每个笔记当前显示的snippet索引
+var searchInput = document.getElementById('search-input');
+var statusDiv = document.getElementById('search-status');
+var resultsDiv = document.getElementById('search-results');
+var debounceTimer = null;
 var currentIndex = {};
 
-function navSnippet(noteId, direction) {
+// 高亮关键字
+function highlight(text, query) {
+    if (!query) return escapeHtml(text);
+    var escaped = escapeHtml(text);
+    var escapedQuery = escapeHtml(query);
+    // 不区分大小写替换
+    var regex = new RegExp('(' + escapedQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+    return escaped.replace(regex, '<mark>$1</mark>');
+}
+
+function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+}
+
+function renderResults(data, query) {
+    var results = data.results;
+    currentIndex = {};
+
+    if (!query.trim()) {
+        statusDiv.innerHTML = '<div class="alert alert-info">请输入关键词来搜索你的所有笔记</div>';
+        resultsDiv.innerHTML = '';
+        return;
+    }
+
+    if (results.length === 0) {
+        statusDiv.innerHTML = '<div class="alert alert-warning">没有找到包含 "<strong>' + escapeHtml(query) + '</strong>" 的笔记</div>';
+        resultsDiv.innerHTML = '';
+        return;
+    }
+
+    statusDiv.innerHTML = '<p class="text-muted">找到 ' + results.length + ' 条包含 "<strong>' + escapeHtml(query) + '</strong>" 的笔记</p>';
+
+    var html = '<div class="list-group">';
+    for (var i = 0; i < results.length; i++) {
+        var note = results[i];
+        var editUrl = '/note/' + note.id + '/edit';
+        var titleHtml = note.title ? highlight(note.title, query) : '<span class="text-muted">无标题</span>';
+
+        html += '<div class="list-group-item search-result-item" data-href="' + editUrl + '">';
+        html += '<div class="d-flex w-100 justify-content-between align-items-start">';
+        html += '<div><h5 class="mb-1">' + titleHtml + '</h5></div>';
+        html += '<div class="d-flex align-items-center gap-2 flex-shrink-0">';
+        html += '<span class="badge bg-info" title="关键字出现次数">' + note.total_count + ' 次匹配</span>';
+        html += '<small class="text-muted">' + escapeHtml(note.updated_at) + '</small>';
+        html += '</div></div>';
+
+        if (note.snippets && note.snippets.length > 0) {
+            html += '<div class="snippet-nav mt-2">';
+            html += '<div class="d-flex align-items-center gap-2 mb-1">';
+            html += '<button type="button" class="btn btn-sm btn-outline-secondary nav-btn" onclick="navSnippet(event, ' + note.id + ', -1)" title="上一个匹配">&#9650;</button>';
+            html += '<span class="snippet-counter text-muted" id="counter-' + note.id + '">1 / ' + note.content_count + '</span>';
+            html += '<button type="button" class="btn btn-sm btn-outline-secondary nav-btn" onclick="navSnippet(event, ' + note.id + ', 1)" title="下一个匹配">&#9660;</button>';
+            html += '</div>';
+            for (var j = 0; j < note.snippets.length; j++) {
+                var display = j === 0 ? '' : 'display:none;';
+                html += '<p class="mb-0 text-muted snippet-text" data-note-id="' + note.id + '" data-index="' + j + '" style="' + display + '">';
+                html += highlight(note.snippets[j], query);
+                html += '</p>';
+            }
+            html += '</div>';
+        }
+
+        html += '</div>';
+    }
+    html += '</div>';
+    resultsDiv.innerHTML = html;
+
+    // 绑定点击跳转
+    document.querySelectorAll('.search-result-item').forEach(function(item) {
+        item.addEventListener('click', function() {
+            window.location.href = this.getAttribute('data-href');
+        });
+    });
+}
+
+function doSearch(query) {
+    if (!query.trim()) {
+        renderResults({results: []}, '');
+        return;
+    }
+    fetch('/api/search?q=' + encodeURIComponent(query))
+        .then(function(resp) { return resp.json(); })
+        .then(function(data) {
+            // 确保结果仍然对应当前输入
+            if (searchInput.value.trim() === query.trim()) {
+                renderResults(data, query);
+            }
+        });
+}
+
+function navSnippet(event, noteId, direction) {
+    event.stopPropagation();
+
     var snippets = document.querySelectorAll('.snippet-text[data-note-id="' + noteId + '"]');
     if (snippets.length === 0) return;
 
-    // 初始化索引
     if (!(noteId in currentIndex)) {
         currentIndex[noteId] = 0;
     }
 
-    // 隐藏当前
     snippets[currentIndex[noteId]].style.display = 'none';
-
-    // 计算新索引（循环）
     currentIndex[noteId] = (currentIndex[noteId] + direction + snippets.length) % snippets.length;
-
-    // 显示新的
     snippets[currentIndex[noteId]].style.display = '';
 
-    // 更新计数器
     var counter = document.getElementById('counter-' + noteId);
     if (counter) {
         counter.textContent = (currentIndex[noteId] + 1) + ' / ' + snippets.length;
     }
+}
+
+// 监听输入事件，防抖 300ms
+searchInput.addEventListener('input', function() {
+    clearTimeout(debounceTimer);
+    var query = this.value;
+    debounceTimer = setTimeout(function() {
+        doSearch(query);
+    }, 300);
+});
+
+// 页面加载时如果已有关键字，立即搜索
+if (searchInput.value.trim()) {
+    doSearch(searchInput.value.trim());
 }
 </script>
 {% endblock %}

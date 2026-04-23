@@ -253,6 +253,78 @@ def search():
     return render_template('search.html', query=query, results=results, match_data=match_data)
 
 
+@app.route('/api/search')
+@login_required
+def api_search():
+    query = request.args.get('q', '', type=str).strip()
+    if not query:
+        return jsonify({'results': []})
+
+    like_pattern = f"%{query}%"
+    notes = Note.query.filter(
+        Note.user_id == current_user.id,
+        db.or_(
+            Note.title.ilike(like_pattern),
+            Note.content.ilike(like_pattern)
+        )
+    ).order_by(Note.updated_at.desc()).all()
+
+    q_lower = query.lower()
+    results = []
+    for note in notes:
+        content = note.content or ''
+        content_lower = content.lower()
+        title = note.title or ''
+        title_lower = title.lower()
+
+        # 统计内容中的匹配
+        positions = []
+        start_search = 0
+        while True:
+            idx = content_lower.find(q_lower, start_search)
+            if idx == -1:
+                break
+            positions.append(idx)
+            start_search = idx + 1
+
+        # 统计标题中的匹配
+        title_count = 0
+        start_search = 0
+        while True:
+            idx = title_lower.find(q_lower, start_search)
+            if idx == -1:
+                break
+            title_count += 1
+            start_search = idx + 1
+
+        # 生成上下文片段
+        snippets = []
+        for idx in positions:
+            ctx_start = max(0, idx - 40)
+            ctx_end = min(len(content), idx + len(query) + 80)
+            prefix = '...' if ctx_start > 0 else ''
+            suffix = '...' if ctx_end < len(content) else ''
+            snippets.append(prefix + content[ctx_start:ctx_end] + suffix)
+
+        # 格式化时间
+        beijing_tz = pytz.timezone('Asia/Shanghai')
+        dt = note.updated_at
+        if dt and dt.tzinfo is None:
+            dt = dt.replace(tzinfo=pytz.UTC).astimezone(beijing_tz)
+        time_str = dt.strftime('%Y-%m-%d %H:%M:%S') if dt else ''
+
+        results.append({
+            'id': note.id,
+            'title': title,
+            'updated_at': time_str,
+            'total_count': len(positions) + title_count,
+            'content_count': len(positions),
+            'snippets': snippets,
+        })
+
+    return jsonify({'results': results})
+
+
 @app.route('/create', methods=['GET', 'POST'])
 @login_required
 def create():
