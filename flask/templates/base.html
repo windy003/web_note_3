@@ -24,7 +24,8 @@
                     笔记列表
                 </a>
                 <ul class="dropdown-menu" aria-labelledby="notesDropdown">
-                    {% for note in (current_user.notes|sort(attribute='updated_at', reverse=true))[:20] %}
+                    {% set active_notes = current_user.notes|selectattr('deleted_at', 'none')|list %}
+                    {% for note in (active_notes|sort(attribute='updated_at', reverse=true))[:20] %}
                     <li><a class="dropdown-item" href="{{ url_for('edit_note', note_id=note.id) }}">
                         {{ note.title }}
                         {% if not note.content %}
@@ -34,10 +35,10 @@
                          {% endif %}
                     </a></li>
                     {% endfor %}
-                    {% if current_user.notes|length > 20 %}
+                    {% if active_notes|length > 20 %}
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-muted text-center" href="{{ url_for('index') }}">查看全部 {{ current_user.notes|length }} 条笔记...</a></li>
-                    {% elif not current_user.notes %}
+                    <li><a class="dropdown-item text-muted text-center" href="{{ url_for('index') }}">查看全部 {{ active_notes|length }} 条笔记...</a></li>
+                    {% elif not active_notes %}
                     <li><span class="dropdown-item text-muted">暂无笔记</span></li>
                     {% endif %}
                 </ul>
@@ -48,6 +49,7 @@
                 <a href="{{ url_for('index') }}" class="btn btn-sm btn-outline-light me-2">所有笔记</a>
                 <a href="{{ url_for('create') }}" class="btn btn-sm btn-outline-light me-2">新建笔记</a>
                 <a href="{{ url_for('search') }}" class="btn btn-sm btn-outline-light me-2">搜索</a>
+                <a href="{{ url_for('trash') }}" class="btn btn-sm btn-outline-light me-2">回收站</a>
                 <form action="{{ url_for('logout') }}" method="POST" class="d-inline">
                     <button type="submit" class="btn btn-sm btn-outline-light">退出</button>
                 </form>
@@ -64,6 +66,9 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('create') }}">新建笔记</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('trash') }}">回收站</a>
                     </li>
                     {% endif %}
                 </ul>

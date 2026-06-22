@@ -43,6 +43,10 @@ def format_datetime(dt):
     # 格式化为易读的时间格式
     return dt.strftime('%Y-%m-%d %H:%M:%S')
 
+# 回收站保留天数：删除后超过该天数会被彻底清除
+TRASH_RETENTION_DAYS = 30
+
+
 class Note(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=True)
@@ -50,8 +54,20 @@ class Note(db.Model):
     # 使用UTC时间存储，显示时再转换
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # 删除时间。为空表示笔记正常；有值表示已移入回收站
+    deleted_at = db.Column(db.DateTime, nullable=True)
 
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    @property
+    def days_left(self):
+        """回收站中的笔记距离彻底删除还剩多少天（向上取整）。"""
+        if self.deleted_at is None:
+            return None
+        expire_at = self.deleted_at + timedelta(days=TRASH_RETENTION_DAYS)
+        remaining = expire_at - datetime.utcnow()
+        days = remaining.days + (1 if remaining.seconds > 0 else 0)
+        return max(0, days)
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -86,6 +102,19 @@ class RegisterForm(FlaskForm):
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+
+def purge_expired_trash():
+    """彻底删除回收站中超过保留天数的笔记。"""
+    cutoff = datetime.utcnow() - timedelta(days=TRASH_RETENTION_DAYS)
+    expired = Note.query.filter(
+        Note.deleted_at.isnot(None),
+        Note.deleted_at < cutoff
+    ).all()
+    if expired:
+        for note in expired:
+            db.session.delete(note)
+        db.session.commit()
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -123,7 +152,8 @@ def register():
 @app.route('/')
 @login_required
 def index():
-    notes = Note.query.filter_by(user_id=current_user.id).order_by(Note.updated_at.desc()).all()
+    purge_expired_trash()
+    notes = Note.query.filter_by(user_id=current_user.id, deleted_at=None).order_by(Note.updated_at.desc()).all()
     return render_template('index.html', notes=notes)
 
 @app.route('/note/<int:note_id>')
@@ -134,6 +164,9 @@ def view_note(note_id):
     if note.user_id != current_user.id:
         flash('您没有权限查看这个笔记')
         return redirect(url_for('index'))
+    if note.deleted_at is not None:
+        flash('该笔记在回收站中')
+        return redirect(url_for('trash'))
     # 直接重定向到编辑页面
     return redirect(url_for('edit_note', note_id=note_id))
 
@@ -145,7 +178,11 @@ def edit_note(note_id):
     if note.user_id != current_user.id:
         flash('您没有权限编辑此笔记', 'danger')
         return redirect(url_for('index'))
-    
+
+    if note.deleted_at is not None:
+        flash('该笔记在回收站中，请先还原后再编辑', 'danger')
+        return redirect(url_for('trash'))
+
     if request.method == 'POST':
         note.title = request.form.get('title')
         note.content = request.form.get('content')
@@ -172,18 +209,58 @@ def delete_note(note_id):
     if note.user_id != current_user.id:
         flash('您没有权限删除这个笔记')
         return redirect(url_for('index'))
+    # 软删除：移入回收站，保留 TRASH_RETENTION_DAYS 天后彻底删除
+    note.deleted_at = datetime.utcnow()
+    db.session.commit()
+    flash(f'笔记已移入回收站，{TRASH_RETENTION_DAYS} 天后将自动彻底删除')
+    return redirect(url_for('index'))
+
+
+@app.route('/trash')
+@login_required
+def trash():
+    """回收站：显示已删除但尚未到期的笔记。"""
+    purge_expired_trash()
+    notes = Note.query.filter(
+        Note.user_id == current_user.id,
+        Note.deleted_at.isnot(None)
+    ).order_by(Note.deleted_at.desc()).all()
+    return render_template('trash.html', notes=notes,
+                           retention_days=TRASH_RETENTION_DAYS)
+
+
+@app.route('/note/<int:note_id>/restore', methods=['POST'])
+@login_required
+def restore_note(note_id):
+    note = Note.query.get_or_404(note_id)
+    if note.user_id != current_user.id:
+        flash('您没有权限还原这个笔记')
+        return redirect(url_for('index'))
+    note.deleted_at = None
+    db.session.commit()
+    flash('笔记已还原')
+    return redirect(url_for('trash'))
+
+
+@app.route('/note/<int:note_id>/delete_permanent', methods=['POST'])
+@login_required
+def delete_note_permanent(note_id):
+    note = Note.query.get_or_404(note_id)
+    if note.user_id != current_user.id:
+        flash('您没有权限删除这个笔记')
+        return redirect(url_for('index'))
     db.session.delete(note)
     db.session.commit()
-    flash('笔记已删除')
-    return redirect(url_for('index'))
+    flash('笔记已彻底删除')
+    return redirect(url_for('trash'))
 
 
 @app.route('/api/note/<int:note_id>/content')
 @login_required
 def get_note_content(note_id):
     """获取笔记的完整内容"""
-    note = Note.query.filter_by(id=note_id, user_id=current_user.id).first()
-    
+    note = Note.query.filter_by(id=note_id, user_id=current_user.id, deleted_at=None).first()
+
     if not note:
         return jsonify({'error': '笔记不存在或无权限访问'}), 404
     
@@ -202,6 +279,7 @@ def search():
         like_pattern = f"%{query}%"
         results = Note.query.filter(
             Note.user_id == current_user.id,
+            Note.deleted_at.is_(None),
             db.or_(
                 Note.title.ilike(like_pattern),
                 Note.content.ilike(like_pattern)
@@ -263,6 +341,7 @@ def api_search():
     like_pattern = f"%{query}%"
     notes = Note.query.filter(
         Note.user_id == current_user.id,
+        Note.deleted_at.is_(None),
         db.or_(
             Note.title.ilike(like_pattern),
             Note.content.ilike(like_pattern)
@@ -351,11 +430,24 @@ def create():
     return render_template('create.html')
 
 
-if __name__ == '__main__':
+def init_db():
+    """初始化数据库：建表并补齐新增的列（轻量迁移）。"""
     with app.app_context():
-        # 只在首次运行时创建表
         db.create_all()  # 创建表（如果不存在）
+        # 为已存在的 note 表补上 deleted_at 列（SQLite 没有自动迁移）
+        existing_columns = [row[1] for row in db.session.execute(
+            db.text("PRAGMA table_info(note)")
+        )]
+        if 'deleted_at' not in existing_columns:
+            db.session.execute(db.text('ALTER TABLE note ADD COLUMN deleted_at DATETIME'))
         db.session.commit()
+
+
+# 模块加载时即初始化数据库，确保 gunicorn 等 WSGI 服务器也能正确建表/迁移
+init_db()
+
+
+if __name__ == '__main__':
 
     env = os.getenv('FLASK_ENV', 'development')
     print(f"当前环境: {env}")
