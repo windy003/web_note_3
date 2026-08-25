@@ -12,7 +12,7 @@
                 </div>
                 
                 <div class="mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="d-flex justify-content-between align-items-center mb-2 content-toolbar">
                         <label for="content" class="form-label mb-0">内容</label>
                         <div class="action-buttons-top">
                             <button type="submit" class="btn btn-sm btn-primary" title="保存">
@@ -46,6 +46,16 @@
 #title {
     font-size: 20px;
     padding: 12px 15px;
+}
+
+/* 内容工具栏(保存等按钮)吸顶，向下滚动时保持可见 */
+.content-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+    background-color: #fff;
+    padding: 8px 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
 }
 
 /* 适配移动端 */
