@@ -245,6 +245,17 @@ main {
     }
 }
 
+/* 导航栏整体建立一个更高的层叠上下文，确保笔记列表下拉菜单
+   （及其他从导航栏弹出的内容）始终显示在页面内吸顶工具栏等控件之上 */
+.navbar {
+    position: relative;
+    z-index: 1045;
+}
+
+.navbar .dropdown-menu {
+    z-index: 1045;
+}
+
 /* 全屏模式样式 */
 .fullscreen-mode {
     position: fixed;

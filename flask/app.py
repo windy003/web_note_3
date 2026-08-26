@@ -448,20 +448,8 @@ init_db()
 
 
 if __name__ == '__main__':
-
-    env = os.getenv('FLASK_ENV', 'development')
-    print(f"当前环境: {env}")
-    
-    if env == 'production':
-        ssl_context = (
-            '/etc/ssl/certs/fullchain.pem',
-            '/etc/ssl/certs/privkey.pem'
-        )
-        app.debug = True
-        app.run(host='0.0.0.0', port=5000, ssl_context=ssl_context)
-    else:
-        # 开发环境启用调试模式
-        app.debug = True
-        app.run(host='0.0.0.0', port=5000) 
+    # 使用 Cloudflare Tunnel 时，TLS 由 cloudflared 在边缘终止，
+    # 本地应用只需以 HTTP 方式监听即可，不需要本地证书
+    app.run(host='0.0.0.0', port=5000, debug=False)
 
 
