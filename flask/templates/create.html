@@ -48,10 +48,10 @@
     padding: 12px 15px;
 }
 
-/* 内容工具栏(保存等按钮)吸顶，向下滚动时保持可见 */
+/* 内容工具栏(保存等按钮)吸顶，向下滚动时保持可见，紧贴在顶部标题栏下方 */
 .content-toolbar {
     position: sticky;
-    top: 0;
+    top: var(--nav-height, 56px);
     z-index: 1030;
     background-color: #fff;
     padding: 8px 0;

@@ -140,6 +140,26 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+    (function() {
+        // 将顶部标题栏(黑色导航栏)的实际渲染高度写入 CSS 变量，
+        // 供页面内需要吸顶在标题栏下方的工具栏（如 .content-toolbar）使用。
+        // 移动端导航栏内容可能换行导致高度变化，因此用 ResizeObserver 实时同步。
+        function syncNavHeight() {
+            const nav = document.querySelector('.navbar');
+            if (!nav) return;
+            document.documentElement.style.setProperty('--nav-height', nav.offsetHeight + 'px');
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            syncNavHeight();
+            const nav = document.querySelector('.navbar');
+            if (nav && window.ResizeObserver) {
+                new ResizeObserver(syncNavHeight).observe(nav);
+            }
+            window.addEventListener('resize', syncNavHeight);
+            window.addEventListener('orientationchange', syncNavHeight);
+        });
+    })();
+
     document.addEventListener('DOMContentLoaded', function() {
         // 获取闪现消息元素
         const flashMessage = document.getElementById('flash-message');
