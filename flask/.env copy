@@ -1,0 +1,13 @@
+SECRET_KEY=
+
+# 找回密码功能用的邮件发送配置（QQ/163等邮箱的SMTP）
+# QQ邮箱示例：MAIL_SERVER=smtp.qq.com  MAIL_PORT=465  MAIL_USE_SSL=true
+# 163邮箱示例：MAIL_SERVER=smtp.163.com MAIL_PORT=465  MAIL_USE_SSL=true
+# MAIL_PASSWORD 不是邮箱登录密码，而是在邮箱设置里申请的"SMTP授权码"
+MAIL_SERVER=smtp.qq.com
+MAIL_PORT=465
+MAIL_USE_SSL=true
+MAIL_USE_TLS=false
+MAIL_USERNAME=your_email@qq.com
+MAIL_PASSWORD=your_smtp_auth_code
+MAIL_DEFAULT_SENDER=your_email@qq.com

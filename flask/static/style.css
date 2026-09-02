@@ -259,6 +259,49 @@ main {
     z-index: 1050;
 }
 
+/* 移动端标题栏：让"笔记列表"下拉入口和操作按钮挤在同一行，
+   避免换行占用额外的垂直空间；放不下时整行横向滚动 */
+@media (max-width: 991.98px) {
+    .navbar .container {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .navbar .container::-webkit-scrollbar {
+        display: none;
+    }
+
+    .navbar .dropdown,
+    .mobile-nav-actions {
+        flex-shrink: 0;
+    }
+
+    .navbar-brand.dropdown-toggle {
+        white-space: nowrap;
+    }
+
+    .mobile-nav-actions {
+        flex-wrap: nowrap;
+    }
+
+    .mobile-nav-actions .btn,
+    .mobile-nav-actions form {
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+
+    .mobile-nav-actions .btn {
+        padding: 0.25rem 0.6rem;
+        font-size: 0.85rem;
+    }
+
+    .mobile-nav-actions .me-2 {
+        margin-right: 0.4rem !important;
+    }
+}
+
 /* 全屏模式样式 */
 .fullscreen-mode {
     position: fixed;

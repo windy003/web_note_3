@@ -7,11 +7,17 @@
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-md-8">
+            <div class="top-collapse-toggle">
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="topCollapseToggleBtn" onclick="toggleTopSection()">
+                    <i class="bi bi-chevron-up" id="topCollapseIcon"></i>
+                    <span id="topCollapseLabel">收起顶部</span>
+                </button>
+            </div>
             <h1 class="mb-4">编辑笔记</h1>
-            <p style="font-size: 14px;color: #e80707;">快捷键: esc退出全屏, ctrl+s保存,ctrl+shift+- 添加下划线</p>
-            
+            <p class="shortcut-hint" style="font-size: 14px;color: #e80707;">快捷键: esc退出全屏, ctrl+s保存,ctrl+shift+- 添加下划线</p>
+
             <form method="POST" id="editForm">
-                <div class="mb-3">
+                <div class="mb-3 title-sticky">
                     <label for="title" class="form-label">标题</label>
                     <input type="text" class="form-control" id="title" name="title" value="{{ note.title }}" required>
                 </div>
@@ -182,14 +188,44 @@
     padding: 12px 15px;
 }
 
-/* 内容工具栏(保存等按钮)吸顶，向下滚动时保持可见，紧贴在顶部标题栏下方 */
+/* 笔记标题输入区域吸顶，紧贴在顶部折叠开关下方 */
+.title-sticky {
+    position: sticky;
+    top: calc(var(--nav-height, 56px) + var(--toggle-bar-height, 0px));
+    z-index: 1035;
+    background-color: #fff;
+    padding-top: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+/* 内容工具栏(保存等按钮)吸顶，向下滚动时保持可见，紧贴在笔记标题下方 */
 .content-toolbar {
     position: sticky;
-    top: var(--nav-height, 56px);
+    top: calc(var(--nav-height, 56px) + var(--toggle-bar-height, 0px) + var(--title-height, 74px));
     z-index: 1030;
     background-color: #fff;
     padding: 8px 0;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+/* 顶部折叠/展开开关：吸顶在标题栏下方，收起状态下依然可点击展开 */
+.top-collapse-toggle {
+    position: sticky;
+    top: var(--nav-height, 56px);
+    z-index: 1040;
+    display: flex;
+    justify-content: flex-end;
+    background-color: #fff;
+    padding: 6px 0;
+}
+
+/* 顶部收起状态：连同顶部标题栏(导航栏)、页面标题、快捷键提示、笔记标题输入区和工具栏一起隐藏，只保留折叠开关 */
+.notes-top-collapsed .navbar,
+.notes-top-collapsed h1,
+.notes-top-collapsed .shortcut-hint,
+.notes-top-collapsed .title-sticky,
+.notes-top-collapsed .content-toolbar {
+    display: none !important;
 }
 
 .exit-fullscreen {
@@ -1309,6 +1345,49 @@ function reverseTextSegments() {
     showNotification(`成功倒置 ${textSegments.length} 个文本段落`, 'success');
 }
 
+// 顶部折叠/展开：收起后隐藏页面标题、提示语、笔记标题输入区和工具栏，节省垂直空间
+function getTopCollapseStorageKey() {
+    return `note_${getNoteId()}_topCollapsed`;
+}
+
+function updateTopCollapseUI(collapsed) {
+    const icon = document.getElementById('topCollapseIcon');
+    const label = document.getElementById('topCollapseLabel');
+    if (icon) icon.className = collapsed ? 'bi bi-chevron-down' : 'bi bi-chevron-up';
+    if (label) label.textContent = collapsed ? '展开顶部' : '收起顶部';
+}
+
+function toggleTopSection() {
+    const collapsed = document.body.classList.toggle('notes-top-collapsed');
+    updateTopCollapseUI(collapsed);
+
+    try {
+        localStorage.setItem(getTopCollapseStorageKey(), collapsed ? 'true' : 'false');
+    } catch (e) {
+        console.error('保存顶部折叠状态失败:', e);
+    }
+
+    // 折叠开关自身高度不变，但内容区域高度变化后需要重新计算吸顶偏移
+    setTimeout(() => {
+        const bar = document.querySelector('.top-collapse-toggle');
+        if (bar) {
+            document.documentElement.style.setProperty('--toggle-bar-height', bar.offsetHeight + 'px');
+        }
+    }, 0);
+}
+
+function loadTopCollapseState() {
+    try {
+        const saved = localStorage.getItem(getTopCollapseStorageKey());
+        if (saved === 'true') {
+            document.body.classList.add('notes-top-collapsed');
+            updateTopCollapseUI(true);
+        }
+    } catch (e) {
+        console.error('读取顶部折叠状态失败:', e);
+    }
+}
+
 // 取消编辑
 function cancelEdit() {
     // 如果在全屏模式，先退出全屏
@@ -1474,6 +1553,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 加载字符数面板状态
     loadCharCountPanelState();
+
+    // 加载顶部折叠状态
+    loadTopCollapseState();
 
     // 设置键盘快捷键
     setupKeyboardShortcuts();

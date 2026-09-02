@@ -45,7 +45,7 @@
             </div>
             
             <!-- 移动端直接显示的按钮 -->
-            <div class="d-flex d-lg-none flex-wrap">
+            <div class="d-flex d-lg-none mobile-nav-actions">
                 <a href="{{ url_for('index') }}" class="btn btn-sm btn-outline-light me-2">所有笔记</a>
                 <a href="{{ url_for('create') }}" class="btn btn-sm btn-outline-light me-2">新建笔记</a>
                 <a href="{{ url_for('search') }}" class="btn btn-sm btn-outline-light me-2">搜索</a>
@@ -142,21 +142,53 @@
     <script>
     (function() {
         // 将顶部标题栏(黑色导航栏)的实际渲染高度写入 CSS 变量，
-        // 供页面内需要吸顶在标题栏下方的工具栏（如 .content-toolbar）使用。
+        // 供页面内需要吸顶在标题栏下方的元素（如 .title-sticky、.content-toolbar）使用。
         // 移动端导航栏内容可能换行导致高度变化，因此用 ResizeObserver 实时同步。
         function syncNavHeight() {
             const nav = document.querySelector('.navbar');
             if (!nav) return;
             document.documentElement.style.setProperty('--nav-height', nav.offsetHeight + 'px');
         }
+
+        // 将笔记标题输入区域(.title-sticky，若页面存在)的高度写入 CSS 变量，
+        // 供紧随其后吸顶的 .content-toolbar 据此计算自己的吸顶偏移，
+        // 从而实现 标题栏 -> 折叠开关 -> 笔记标题 -> 工具栏 依次吸顶。
+        function syncTitleHeight() {
+            const title = document.querySelector('.title-sticky');
+            if (!title) return;
+            document.documentElement.style.setProperty('--title-height', title.offsetHeight + 'px');
+        }
+
+        // 将顶部折叠/展开开关(.top-collapse-toggle，若页面存在)的高度写入 CSS 变量，
+        // 供 .title-sticky、.content-toolbar 计算吸顶偏移，避免折叠开关被它们遮挡。
+        function syncToggleBarHeight() {
+            const bar = document.querySelector('.top-collapse-toggle');
+            if (!bar) return;
+            document.documentElement.style.setProperty('--toggle-bar-height', bar.offsetHeight + 'px');
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             syncNavHeight();
+            syncTitleHeight();
+            syncToggleBarHeight();
             const nav = document.querySelector('.navbar');
-            if (nav && window.ResizeObserver) {
-                new ResizeObserver(syncNavHeight).observe(nav);
+            const title = document.querySelector('.title-sticky');
+            const toggleBar = document.querySelector('.top-collapse-toggle');
+            if (window.ResizeObserver) {
+                if (nav) new ResizeObserver(syncNavHeight).observe(nav);
+                if (title) new ResizeObserver(syncTitleHeight).observe(title);
+                if (toggleBar) new ResizeObserver(syncToggleBarHeight).observe(toggleBar);
             }
-            window.addEventListener('resize', syncNavHeight);
-            window.addEventListener('orientationchange', syncNavHeight);
+            window.addEventListener('resize', function() {
+                syncNavHeight();
+                syncTitleHeight();
+                syncToggleBarHeight();
+            });
+            window.addEventListener('orientationchange', function() {
+                syncNavHeight();
+                syncTitleHeight();
+                syncToggleBarHeight();
+            });
         });
     })();
 
