@@ -300,6 +300,23 @@ main {
     .mobile-nav-actions .me-2 {
         margin-right: 0.4rem !important;
     }
+
+    /* "笔记列表"下拉菜单修复：
+       Bootstrap 检测到下拉菜单在 .navbar 内部时会直接禁用 Popper 定位
+       （给 data-bs-popper="none"，完全靠普通 CSS 摆放），而不是我们以为的
+       用 JS/Popper 计算位置。菜单默认仍是 position: absolute，会被上面
+       .navbar .container 的 overflow-x: auto（连带被强制 overflow-y: auto）
+       在纵向裁剪掉，导致点击后菜单其实打开了但基本不可见。
+       这里直接用 position: fixed 相对视口定位，摆脱父容器的 overflow 裁剪，
+       并自带最大高度 + 纵向滚动，避免笔记很多时超出屏幕。 */
+    .navbar .dropdown-menu {
+        position: fixed;
+        top: var(--nav-height, 56px);
+        left: 0.5rem;
+        right: 0.5rem;
+        max-height: calc(100vh - var(--nav-height, 56px) - 1rem);
+        overflow-y: auto;
+    }
 }
 
 /* 全屏模式样式 */
