@@ -159,35 +159,22 @@
             document.documentElement.style.setProperty('--title-height', title.offsetHeight + 'px');
         }
 
-        // 将顶部折叠/展开开关(.top-collapse-toggle，若页面存在)的高度写入 CSS 变量，
-        // 供 .title-sticky、.content-toolbar 计算吸顶偏移，避免折叠开关被它们遮挡。
-        function syncToggleBarHeight() {
-            const bar = document.querySelector('.top-collapse-toggle');
-            if (!bar) return;
-            document.documentElement.style.setProperty('--toggle-bar-height', bar.offsetHeight + 'px');
-        }
-
         document.addEventListener('DOMContentLoaded', function() {
             syncNavHeight();
             syncTitleHeight();
-            syncToggleBarHeight();
             const nav = document.querySelector('.navbar');
             const title = document.querySelector('.title-sticky');
-            const toggleBar = document.querySelector('.top-collapse-toggle');
             if (window.ResizeObserver) {
                 if (nav) new ResizeObserver(syncNavHeight).observe(nav);
                 if (title) new ResizeObserver(syncTitleHeight).observe(title);
-                if (toggleBar) new ResizeObserver(syncToggleBarHeight).observe(toggleBar);
             }
             window.addEventListener('resize', function() {
                 syncNavHeight();
                 syncTitleHeight();
-                syncToggleBarHeight();
             });
             window.addEventListener('orientationchange', function() {
                 syncNavHeight();
                 syncTitleHeight();
-                syncToggleBarHeight();
             });
         });
     })();

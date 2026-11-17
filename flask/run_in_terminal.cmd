@@ -1,0 +1,1 @@
+"D:\files\using\Web\web_note_3\flask\.venv\Scripts\python.exe"  "D:\files\using\Web\web_note_3\flask\app.py"
